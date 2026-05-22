@@ -2,12 +2,18 @@ import { ProjectCover, Screen, ScreenBody } from '@/components/lrx';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
+import { File, Paths } from 'expo-file-system';
 import { Stack } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import {
   ArrowLeft,
+  Check,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Download,
   Eye,
   FastForward,
   FileText,
@@ -23,6 +29,7 @@ import {
   Save,
   Search,
   Settings,
+  Share2,
   Sparkles,
   Tag,
   Undo2,
@@ -699,6 +706,127 @@ function MetadataField({
   );
 }
 
+function ExportSheet({
+  project,
+  lyrics,
+  onClose,
+}: {
+  project: Project;
+  lyrics: LyricLineData[];
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = React.useState(false);
+  const [shareStatus, setShareStatus] = React.useState<'idle' | 'sharing' | 'done' | 'unavailable' | 'error'>('idle');
+  const lrcText = React.useMemo(() => buildLrcFile(project, lyrics), [project, lyrics]);
+  const synced = lyrics.filter((line) => line.text && line.t != null).length;
+  const total = lyrics.filter((line) => line.text).length;
+
+  async function copyToClipboard() {
+    await Clipboard.setStringAsync(lrcText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  }
+
+  async function shareFile() {
+    setShareStatus('sharing');
+
+    try {
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        setShareStatus('unavailable');
+        return;
+      }
+
+      const fileName = `${toFileName(project.title)}.lrc`;
+      const file = new File(Paths.cache, fileName);
+      file.create({ overwrite: true });
+      file.write(lrcText);
+
+      await Sharing.shareAsync(file.uri, {
+        mimeType: 'text/plain',
+        UTI: 'public.plain-text',
+        dialogTitle: `Partager ${fileName}`,
+      });
+      setShareStatus('done');
+    } catch {
+      setShareStatus('error');
+    }
+  }
+
+  return (
+    <View className="absolute inset-0 z-50 justify-end bg-black/60">
+      <Pressable className="absolute inset-0" onPress={onClose} />
+      <View className="max-h-[88%] rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
+        <View className="mb-5 items-center">
+          <View className="h-1.5 w-12 rounded-full bg-input" />
+        </View>
+
+        <View className="mb-5 flex-row items-start justify-between gap-4">
+          <View className="flex-1">
+            <Text className="text-2xl font-semibold text-foreground">Export .lrc</Text>
+            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
+              Preview final avec metadonnees et timestamps synchronises.
+            </Text>
+          </View>
+          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
+            <Icon as={X} className="size-5 text-foreground" />
+          </Button>
+        </View>
+
+        <View className="mb-4 flex-row gap-2">
+          <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
+            <Text className="font-mono text-xl font-semibold text-foreground">
+              {synced}/{total}
+            </Text>
+            <Text className="mt-1 text-xs text-muted-foreground">lignes timees</Text>
+          </View>
+          <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
+            <Text className="font-mono text-xl font-semibold text-foreground">{lrcText.split('\n').length}</Text>
+            <Text className="mt-1 text-xs text-muted-foreground">lignes export</Text>
+          </View>
+        </View>
+
+        <View className="rounded-2xl border border-border bg-card">
+          <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+            <View className="flex-row items-center gap-2">
+              <Icon as={FileText} className="size-4 text-primary" />
+              <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Preview</Text>
+            </View>
+            <Text className="font-mono text-[11px] text-muted-foreground">{toFileName(project.title)}.lrc</Text>
+          </View>
+          <ScrollView className="h-[310px]" contentContainerClassName="px-4 py-3">
+            <Text selectable className="font-mono text-xs leading-5 text-foreground">
+              {lrcText}
+            </Text>
+          </ScrollView>
+        </View>
+
+        <View className="mt-4 flex-row gap-2">
+          <Button variant="outline" onPress={copyToClipboard} className="h-14 flex-1 rounded-2xl bg-card">
+            <Icon as={copied ? Check : Copy} className="size-5 text-foreground" />
+            <Text>{copied ? 'Copie' : 'Copier'}</Text>
+          </Button>
+          <Button onPress={shareFile} disabled={shareStatus === 'sharing'} className="h-14 flex-1 rounded-2xl">
+            <Icon as={shareStatus === 'done' ? Check : Share2} className="size-5 text-primary-foreground" />
+            <Text>{shareStatus === 'sharing' ? 'Partage...' : 'Partager'}</Text>
+          </Button>
+        </View>
+
+        <View className="mt-3 flex-row items-center justify-center gap-2">
+          <Icon as={Download} className="size-4 text-muted-foreground" />
+          <Text className="text-center text-xs text-muted-foreground">
+            {shareStatus === 'unavailable'
+              ? 'Partage indisponible sur cette plateforme.'
+              : shareStatus === 'error'
+                ? 'Impossible de creer le fichier pour le moment.'
+                : 'Le fichier est genere localement au moment du partage.'}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function ImportLyricsSheet({
   onClose,
   onCreate,
@@ -810,6 +938,7 @@ function EditorScreen({
   const [time, setTime] = React.useState(18.6);
   const [playing, setPlaying] = React.useState(false);
   const [speed, setSpeed] = React.useState<0.5 | 1 | 1.5>(1);
+  const [exportOpen, setExportOpen] = React.useState(false);
   const [history, setHistory] = React.useState<{ lyrics: LyricLineData[]; activeIndex: number }[]>([]);
   const [future, setFuture] = React.useState<{ lyrics: LyricLineData[]; activeIndex: number }[]>([]);
   const duration = 222;
@@ -937,7 +1066,7 @@ function EditorScreen({
                   <Icon as={FastForward} className="size-5 text-foreground" />
                 </Button>
               </View>
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" size="icon" onPress={() => setExportOpen(true)} className="rounded-full">
                 <Icon as={Eye} className="size-5 text-foreground" />
               </Button>
             </View>
@@ -975,6 +1104,7 @@ function EditorScreen({
           </View>
         </ScreenBody>
       </Screen>
+      {exportOpen ? <ExportSheet project={project} lyrics={lyrics} onClose={() => setExportOpen(false)} /> : null}
     </>
   );
 }
@@ -1146,6 +1276,45 @@ function normalizeAudioTitle(fileName: string) {
     .replace(/[_-]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim() || 'Nouveau projet';
+}
+
+function buildLrcFile(project: Project, lyrics: LyricLineData[]) {
+  const metadata = project.metadata;
+  const title = metadata?.title || project.title;
+  const artist = metadata?.artist || project.artist;
+  const tags = [
+    ['ti', title],
+    ['ar', artist],
+    ['al', metadata?.album],
+    ['by', metadata?.author],
+    ['re', metadata?.genre],
+  ]
+    .filter(([, value]) => Boolean(value))
+    .map(([key, value]) => `[${key}:${escapeLrcValue(String(value))}]`);
+
+  const body = lyrics
+    .filter((line) => line.text.trim())
+    .map((line) => {
+      const stamp = line.t == null ? '--:--.--' : formatTime(line.t);
+      return `[${stamp}] ${line.text.trim()}`;
+    });
+
+  return [...tags, '', ...body].join('\n');
+}
+
+function escapeLrcValue(value: string) {
+  return value.replace(/[\r\n[\]]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function toFileName(value: string) {
+  return (
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase() || 'lyrics'
+  );
 }
 
 function formatTime(totalSeconds: number) {
