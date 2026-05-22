@@ -168,6 +168,7 @@ type LrcMetadata = {
 };
 
 type LyricLineData = {
+  id?: string;
   text: string;
   t?: number;
 };
@@ -196,6 +197,9 @@ export default function IndexScreen() {
   const storeProjects = useLrxStore((state) => state.projects);
   const openStoredProject = useLrxStore((state) => state.openProject);
   const createStoredProject = useLrxStore((state) => state.createProject);
+  const updateStoredTimestamp = useLrxStore((state) => state.updateTimestamp);
+  const clearStoredTimestamp = useLrxStore((state) => state.clearTimestamp);
+  const saveStoredMetadata = useLrxStore((state) => state.saveMetadata);
   const [view, setView] = React.useState<AppView>('onboarding');
   const [activeProject, setActiveProject] = React.useState<Project>(PROJECTS[0]);
   const [activeLyrics, setActiveLyrics] = React.useState<LyricLineData[]>(INITIAL_LYRICS);
@@ -213,12 +217,27 @@ export default function IndexScreen() {
           initialLyrics={activeLyrics}
           onBack={() => setView('home')}
           onOpenMetadata={() => setMetadataOpen(true)}
+          onTimestampChange={(line, nextTime) => {
+            if (!line.id) return;
+            updateStoredTimestamp(activeProject.id, line.id, nextTime);
+          }}
+          onLyricsSnapshotChange={(lines) => {
+            lines.forEach((line) => {
+              if (!line.id) return;
+              if (line.t == null) {
+                clearStoredTimestamp(activeProject.id, line.id);
+                return;
+              }
+              updateStoredTimestamp(activeProject.id, line.id, line.t);
+            });
+          }}
         />
         {metadataOpen ? (
           <MetadataSheet
             project={activeProject}
             onClose={() => setMetadataOpen(false)}
             onSave={(metadata) => {
+              saveStoredMetadata(activeProject.id, metadata);
               setActiveProject((current) => ({
                 ...current,
                 title: metadata.title || current.title,
@@ -1254,11 +1273,15 @@ function EditorScreen({
   initialLyrics,
   onBack,
   onOpenMetadata,
+  onTimestampChange,
+  onLyricsSnapshotChange,
 }: {
   project: Project;
   initialLyrics: LyricLineData[];
   onBack: () => void;
   onOpenMetadata: () => void;
+  onTimestampChange?: (line: LyricLineData, time: number) => void;
+  onLyricsSnapshotChange?: (lines: LyricLineData[]) => void;
 }) {
   const [lyrics, setLyrics] = React.useState(initialLyrics);
   const [activeIndex, setActiveIndex] = React.useState(() => {
@@ -1299,11 +1322,14 @@ function EditorScreen({
   }
 
   function tapTime() {
+    const activeLine = lyrics[activeIndex];
+    if (!activeLine?.text) return;
     setHistory((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
     setFuture([]);
     setLyrics((items) =>
       items.map((line, index) => (index === activeIndex ? { ...line, t: time } : line))
     );
+    onTimestampChange?.(activeLine, time);
     setActiveIndex((current) => findNextLyric(lyrics, current));
   }
 
@@ -1313,6 +1339,7 @@ function EditorScreen({
     setFuture((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
     setLyrics(previous.lyrics);
     setActiveIndex(previous.activeIndex);
+    onLyricsSnapshotChange?.(previous.lyrics);
     setHistory((items) => items.slice(0, -1));
   }
 
@@ -1322,6 +1349,7 @@ function EditorScreen({
     setHistory((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
     setLyrics(next.lyrics);
     setActiveIndex(next.activeIndex);
+    onLyricsSnapshotChange?.(next.lyrics);
     setFuture((items) => items.slice(0, -1));
   }
 
@@ -1330,12 +1358,15 @@ function EditorScreen({
   }
 
   function updateActiveTimestamp(nextTime: number) {
+    const activeLine = lyrics[activeIndex];
+    if (!activeLine?.text) return;
     const boundedTime = Math.max(0, Math.min(duration, nextTime));
     setHistory((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
     setFuture([]);
     setLyrics((items) =>
       items.map((line, index) => (index === activeIndex ? { ...line, t: boundedTime } : line))
     );
+    onTimestampChange?.(activeLine, boundedTime);
     setTime(boundedTime);
   }
 
@@ -1939,6 +1970,7 @@ function projectToViewProject(project: LrxProject): Project {
 
 function projectLyricsToEditorLyrics(project: LrxProject): LyricLineData[] {
   return project.lyrics.map((line) => ({
+    id: line.id,
     text: line.text,
     t: line.t,
   }));
