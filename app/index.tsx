@@ -1,4 +1,4 @@
-import { ProjectCover, Screen, ScreenBody } from '@/components/lrx';
+import { EmptyState, ProjectCover, Screen, ScreenBody } from '@/components/lrx';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -18,7 +18,9 @@ import {
   FastForward,
   FileText,
   FolderOpen,
+  Gauge,
   ListChecks,
+  Moon,
   MoreHorizontal,
   Music2,
   Pause,
@@ -30,11 +32,18 @@ import {
   Search,
   Settings,
   Share2,
+  ShieldAlert,
+  SlidersHorizontal,
   Sparkles,
+  ScrollText,
+  Smartphone,
+  Sun,
   Tag,
   Undo2,
   Upload,
+  Vibrate,
   X,
+  type LucideIcon,
 } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
@@ -160,12 +169,30 @@ type LyricLineData = {
 };
 
 type ProjectFilter = 'all' | Project['status'];
-type AppView = 'onboarding' | 'home' | 'editor';
+type ThemePreference = 'system' | 'dark' | 'light';
+type DefaultSpeed = 0.5 | 1 | 1.5;
+type SettingsPreferences = {
+  theme: ThemePreference;
+  defaultSpeed: DefaultSpeed;
+  haptics: boolean;
+  autoScroll: boolean;
+  confirmUnsyncedExport: boolean;
+};
+type AppView = 'onboarding' | 'home' | 'editor' | 'settings';
+
+const DEFAULT_SETTINGS: SettingsPreferences = {
+  theme: 'dark',
+  defaultSpeed: 1,
+  haptics: true,
+  autoScroll: true,
+  confirmUnsyncedExport: true,
+};
 
 export default function IndexScreen() {
   const [view, setView] = React.useState<AppView>('onboarding');
   const [activeProject, setActiveProject] = React.useState<Project>(PROJECTS[0]);
   const [activeLyrics, setActiveLyrics] = React.useState<LyricLineData[]>(INITIAL_LYRICS);
+  const [settings, setSettings] = React.useState<SettingsPreferences>(DEFAULT_SETTINGS);
   const [importOpen, setImportOpen] = React.useState(false);
   const [audioOpen, setAudioOpen] = React.useState(false);
   const [metadataOpen, setMetadataOpen] = React.useState(false);
@@ -198,6 +225,16 @@ export default function IndexScreen() {
     );
   }
 
+  if (view === 'settings') {
+    return (
+      <SettingsScreen
+        preferences={settings}
+        onBack={() => setView('home')}
+        onChange={(nextPreferences) => setSettings(nextPreferences)}
+      />
+    );
+  }
+
   if (view === 'home') {
     return (
       <>
@@ -209,6 +246,7 @@ export default function IndexScreen() {
           }}
           onImportLyrics={() => setImportOpen(true)}
           onImportAudio={() => setAudioOpen(true)}
+          onOpenSettings={() => setView('settings')}
         />
         {audioOpen ? (
           <AudioPickerSheet
@@ -340,10 +378,12 @@ function HomeScreen({
   onOpen,
   onImportLyrics,
   onImportAudio,
+  onOpenSettings,
 }: {
   onOpen: (project: Project) => void;
   onImportLyrics: () => void;
   onImportAudio: () => void;
+  onOpenSettings: () => void;
 }) {
   const [filter, setFilter] = React.useState<ProjectFilter>('all');
   const filteredProjects = React.useMemo(
@@ -366,7 +406,7 @@ function HomeScreen({
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Icon as={Search} className="size-5 text-foreground" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" size="icon" onPress={onOpenSettings} className="rounded-full">
                 <Icon as={Settings} className="size-5 text-foreground" />
               </Button>
             </View>
@@ -385,9 +425,22 @@ function HomeScreen({
             <FilterTabs filter={filter} onChange={setFilter} />
 
             <View className="pt-1">
-              {filteredProjects.map((project, index) => (
-                <ProjectRow key={project.id} project={project} index={index} onOpen={onOpen} />
-              ))}
+              {filteredProjects.length ? (
+                filteredProjects.map((project, index) => (
+                  <ProjectRow key={project.id} project={project} index={index} onOpen={onOpen} />
+                ))
+              ) : (
+                <EmptyState
+                  icon={FolderOpen}
+                  title="Aucun projet ici"
+                  body="Change de filtre ou demarre une nouvelle session LRC avec un audio ou des lyrics."
+                  cta="Import audio"
+                  onCta={onImportAudio}
+                  secondaryCta="Coller lyrics"
+                  onSecondaryCta={onImportLyrics}
+                  className="mx-4 rounded-3xl border border-border bg-card/45"
+                />
+              )}
             </View>
 
             <Text className="mt-7 text-center font-mono text-[11px] text-muted-foreground">
@@ -408,6 +461,226 @@ function HomeScreen({
         </ScreenBody>
       </Screen>
     </>
+  );
+}
+
+function SettingsScreen({
+  preferences,
+  onBack,
+  onChange,
+}: {
+  preferences: SettingsPreferences;
+  onBack: () => void;
+  onChange: (preferences: SettingsPreferences) => void;
+}) {
+  function update(next: Partial<SettingsPreferences>) {
+    onChange({ ...preferences, ...next });
+  }
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <Screen>
+        <ScreenBody>
+          <View className="flex-row items-center gap-2 px-3 pb-2 pt-3">
+            <Button variant="ghost" size="icon" onPress={onBack} className="rounded-full">
+              <Icon as={ArrowLeft} className="size-5 text-foreground" />
+            </Button>
+            <View className="min-w-0 flex-1">
+              <Text className="text-lg font-semibold text-foreground">Settings</Text>
+              <Text className="mt-0.5 text-xs text-muted-foreground">Workspace et preferences studio</Text>
+            </View>
+            <View className="size-10 items-center justify-center rounded-full border border-border bg-card">
+              <Icon as={SlidersHorizontal} className="size-5 text-primary" />
+            </View>
+          </View>
+
+          <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-3" showsVerticalScrollIndicator={false}>
+            <View className="mb-6 rounded-[24px] border border-primary/25 bg-primary/10 p-5">
+              <View className="flex-row items-start justify-between gap-4">
+                <View className="flex-1">
+                  <Text className="text-xs font-semibold uppercase tracking-[2px] text-primary">LRX Studio</Text>
+                  <Text className="mt-3 text-[30px] font-semibold leading-9 text-foreground">Sync rapide, controle propre.</Text>
+                  <Text className="mt-3 text-sm leading-5 text-muted-foreground">
+                    Ces reglages preparent l'experience editor: vitesse, feedback tactile, auto-scroll et securite export.
+                  </Text>
+                </View>
+                <LrxMark />
+              </View>
+              <View className="mt-5 flex-row gap-2">
+                <SettingsStat value={`${preferences.defaultSpeed}x`} label="speed" />
+                <SettingsStat value={preferences.autoScroll ? 'ON' : 'OFF'} label="scroll" />
+                <SettingsStat value={preferences.haptics ? 'ON' : 'OFF'} label="haptics" />
+              </View>
+            </View>
+
+            <View className="mb-6">
+              <Text className="mb-3 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">Theme</Text>
+              <View className="flex-row gap-2">
+                <ThemeOption
+                  label="System"
+                  icon={Smartphone}
+                  selected={preferences.theme === 'system'}
+                  onPress={() => update({ theme: 'system' })}
+                />
+                <ThemeOption
+                  label="Dark"
+                  icon={Moon}
+                  selected={preferences.theme === 'dark'}
+                  onPress={() => update({ theme: 'dark' })}
+                />
+                <ThemeOption
+                  label="Light"
+                  icon={Sun}
+                  selected={preferences.theme === 'light'}
+                  onPress={() => update({ theme: 'light' })}
+                />
+              </View>
+            </View>
+
+            <View className="mb-6">
+              <Text className="mb-3 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">Edition</Text>
+              <View className="gap-3">
+                <SettingsToggle
+                  icon={Vibrate}
+                  title="Feedback tactile"
+                  description="Vibration courte sur Tap Time, undo et navigation de lignes."
+                  enabled={preferences.haptics}
+                  onPress={() => update({ haptics: !preferences.haptics })}
+                />
+                <SettingsToggle
+                  icon={ScrollText}
+                  title="Auto-scroll lyrics"
+                  description="Garde la ligne active visible pendant la lecture et le tapping."
+                  enabled={preferences.autoScroll}
+                  onPress={() => update({ autoScroll: !preferences.autoScroll })}
+                />
+                <SettingsToggle
+                  icon={ShieldAlert}
+                  title="Confirmer export incomplet"
+                  description="Avertit avant de partager un .lrc avec des lignes non synchronisees."
+                  enabled={preferences.confirmUnsyncedExport}
+                  onPress={() => update({ confirmUnsyncedExport: !preferences.confirmUnsyncedExport })}
+                />
+              </View>
+            </View>
+
+            <View className="mb-6">
+              <Text className="mb-3 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">Vitesse par defaut</Text>
+              <View className="rounded-2xl border border-border bg-card p-2">
+                <View className="flex-row gap-2">
+                  {([0.5, 1, 1.5] as const).map((speed) => (
+                    <SpeedOption
+                      key={speed}
+                      speed={speed}
+                      selected={preferences.defaultSpeed === speed}
+                      onPress={() => update({ defaultSpeed: speed })}
+                    />
+                  ))}
+                </View>
+                <View className="mt-4 flex-row items-center gap-2 px-2 pb-1">
+                  <Icon as={Gauge} className="size-4 text-muted-foreground" />
+                  <Text className="flex-1 text-xs leading-4 text-muted-foreground">
+                    Appliquee aux nouveaux projets; l'editeur garde ensuite sa vitesse de session.
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View className="rounded-2xl border border-border bg-card px-4 py-4">
+              <View className="flex-row items-center justify-between">
+                <View>
+                  <Text className="text-sm font-semibold text-foreground">Workspace</Text>
+                  <Text className="mt-1 text-xs text-muted-foreground">Local prototype - stockage reel a venir</Text>
+                </View>
+                <Text className="font-mono text-xs text-primary">v0.1</Text>
+              </View>
+            </View>
+          </ScrollView>
+        </ScreenBody>
+      </Screen>
+    </>
+  );
+}
+
+function SettingsStat({ value, label }: { value: string; label: string }) {
+  return (
+    <View className="flex-1 rounded-2xl border border-primary/20 bg-background/50 px-3 py-3">
+      <Text className="font-mono text-base font-semibold text-foreground">{value}</Text>
+      <Text className="mt-1 text-[10px] uppercase tracking-[1.5px] text-muted-foreground">{label}</Text>
+    </View>
+  );
+}
+
+function ThemeOption({
+  label,
+  icon,
+  selected,
+  onPress,
+}: {
+  label: string;
+  icon: LucideIcon;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`h-24 flex-1 items-center justify-center gap-2 rounded-2xl border ${
+        selected ? 'border-primary bg-primary' : 'border-border bg-card'
+      }`}>
+      <Icon as={icon} className={`size-5 ${selected ? 'text-primary-foreground' : 'text-foreground'}`} />
+      <Text className={`text-sm font-semibold ${selected ? 'text-primary-foreground' : 'text-foreground'}`}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function SpeedOption({
+  speed,
+  selected,
+  onPress,
+}: {
+  speed: DefaultSpeed;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`h-12 flex-1 items-center justify-center rounded-xl ${
+        selected ? 'bg-foreground' : 'bg-background'
+      }`}>
+      <Text className={`font-mono text-sm font-semibold ${selected ? 'text-background' : 'text-muted-foreground'}`}>{speed}x</Text>
+    </Pressable>
+  );
+}
+
+function SettingsToggle({
+  icon,
+  title,
+  description,
+  enabled,
+  onPress,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  enabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} className="flex-row items-center gap-4 rounded-2xl border border-border bg-card p-4">
+      <View className="size-11 items-center justify-center rounded-2xl bg-background">
+        <Icon as={icon} className={`size-5 ${enabled ? 'text-primary' : 'text-muted-foreground'}`} />
+      </View>
+      <View className="min-w-0 flex-1">
+        <Text className="text-sm font-semibold text-foreground">{title}</Text>
+        <Text className="mt-1 text-xs leading-4 text-muted-foreground">{description}</Text>
+      </View>
+      <View className={`h-8 w-14 justify-center rounded-full px-1 ${enabled ? 'items-end bg-primary' : 'items-start bg-input'}`}>
+        <View className="size-6 rounded-full bg-white" />
+      </View>
+    </Pressable>
   );
 }
 
@@ -527,6 +800,7 @@ function AudioPickerSheet({
   onCreate: (audioName: string, duration?: string) => void;
 }) {
   const [picking, setPicking] = React.useState(false);
+  const recentAudio = RECENT_AUDIO;
 
   async function pickAudio() {
     setPicking(true);
@@ -584,27 +858,39 @@ function AudioPickerSheet({
           <Text className="mb-3 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">
             Recents
           </Text>
-          <View className="gap-2">
-            {RECENT_AUDIO.map((audio) => (
-              <Pressable
-                key={audio.name}
-                onPress={() => onCreate(audio.name, audio.duration)}
-                className="flex-row items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3">
-                <View className="size-11 items-center justify-center rounded-xl bg-input">
-                  <Icon as={FolderOpen} className="size-5 text-muted-foreground" />
-                </View>
-                <View className="min-w-0 flex-1">
-                  <Text numberOfLines={1} className="text-sm font-medium text-foreground">
-                    {audio.name}
-                  </Text>
-                  <Text className="mt-0.5 text-xs text-muted-foreground">
-                    {audio.size} - {audio.duration}
-                  </Text>
-                </View>
-                <Icon as={ChevronRight} className="size-5 text-muted-foreground" />
-              </Pressable>
-            ))}
-          </View>
+          {recentAudio.length ? (
+            <View className="gap-2">
+              {recentAudio.map((audio) => (
+                <Pressable
+                  key={audio.name}
+                  onPress={() => onCreate(audio.name, audio.duration)}
+                  className="flex-row items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3">
+                  <View className="size-11 items-center justify-center rounded-xl bg-input">
+                    <Icon as={FolderOpen} className="size-5 text-muted-foreground" />
+                  </View>
+                  <View className="min-w-0 flex-1">
+                    <Text numberOfLines={1} className="text-sm font-medium text-foreground">
+                      {audio.name}
+                    </Text>
+                    <Text className="mt-0.5 text-xs text-muted-foreground">
+                      {audio.size} - {audio.duration}
+                    </Text>
+                  </View>
+                  <Icon as={ChevronRight} className="size-5 text-muted-foreground" />
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <EmptyState
+              variant="compact"
+              icon={FolderOpen}
+              title="Aucun audio recent"
+              body="Importe un fichier depuis ton appareil pour commencer une session."
+              cta="Choisir audio"
+              onCta={pickAudio}
+              className="rounded-2xl border border-border bg-card"
+            />
+          )}
         </View>
       </View>
     </View>
@@ -720,14 +1006,18 @@ function ExportSheet({
   const lrcText = React.useMemo(() => buildLrcFile(project, lyrics), [project, lyrics]);
   const synced = lyrics.filter((line) => line.text && line.t != null).length;
   const total = lyrics.filter((line) => line.text).length;
+  const hasLyrics = total > 0;
+  const hasUnsyncedLyrics = hasLyrics && synced < total;
 
   async function copyToClipboard() {
+    if (!hasLyrics) return;
     await Clipboard.setStringAsync(lrcText);
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
   }
 
   async function shareFile() {
+    if (!hasLyrics) return;
     setShareStatus('sharing');
 
     try {
@@ -773,6 +1063,20 @@ function ExportSheet({
           </Button>
         </View>
 
+        {hasUnsyncedLyrics ? (
+          <View className="mb-4 flex-row items-center gap-3 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3">
+            <View className="size-10 items-center justify-center rounded-xl bg-primary/20">
+              <Icon as={ShieldAlert} className="size-5 text-primary" />
+            </View>
+            <View className="min-w-0 flex-1">
+              <Text className="text-sm font-semibold text-foreground">Export incomplet</Text>
+              <Text className="mt-0.5 text-xs leading-4 text-muted-foreground">
+                {total - synced} ligne{total - synced > 1 ? 's' : ''} sans timestamp seront marquees --:--.--.
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         <View className="mb-4 flex-row gap-2">
           <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
             <Text className="font-mono text-xl font-semibold text-foreground">
@@ -794,19 +1098,33 @@ function ExportSheet({
             </View>
             <Text className="font-mono text-[11px] text-muted-foreground">{toFileName(project.title)}.lrc</Text>
           </View>
-          <ScrollView className="h-[310px]" contentContainerClassName="px-4 py-3">
-            <Text selectable className="font-mono text-xs leading-5 text-foreground">
-              {lrcText}
-            </Text>
-          </ScrollView>
+          {hasLyrics ? (
+            <ScrollView className="h-[310px]" contentContainerClassName="px-4 py-3">
+              <Text selectable className="font-mono text-xs leading-5 text-foreground">
+                {lrcText}
+              </Text>
+            </ScrollView>
+          ) : (
+            <EmptyState
+              variant="compact"
+              icon={FileText}
+              title="Aucune lyric a exporter"
+              body="Ajoute ou importe des paroles avant de generer un fichier .lrc."
+              className="h-[310px] justify-center"
+            />
+          )}
         </View>
 
         <View className="mt-4 flex-row gap-2">
-          <Button variant="outline" onPress={copyToClipboard} className="h-14 flex-1 rounded-2xl bg-card">
+          <Button
+            variant="outline"
+            onPress={copyToClipboard}
+            disabled={!hasLyrics}
+            className="h-14 flex-1 rounded-2xl bg-card">
             <Icon as={copied ? Check : Copy} className="size-5 text-foreground" />
             <Text>{copied ? 'Copie' : 'Copier'}</Text>
           </Button>
-          <Button onPress={shareFile} disabled={shareStatus === 'sharing'} className="h-14 flex-1 rounded-2xl">
+          <Button onPress={shareFile} disabled={!hasLyrics || shareStatus === 'sharing'} className="h-14 flex-1 rounded-2xl">
             <Icon as={shareStatus === 'done' ? Check : Share2} className="size-5 text-primary-foreground" />
             <Text>{shareStatus === 'sharing' ? 'Partage...' : 'Partager'}</Text>
           </Button>
@@ -890,20 +1208,26 @@ function ImportLyricsSheet({
 
         <View className="mt-5">
           <Text className="mb-2 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">Preview</Text>
-          <View className="gap-2">
-            {preview.length ? (
-              preview.map((line, index) => (
+          {preview.length ? (
+            <View className="gap-2">
+              {preview.map((line, index) => (
                 <View key={`${line}-${index}`} className="flex-row items-center gap-3">
                   <Text className="w-6 font-mono text-[11px] text-muted-foreground">{index + 1}</Text>
                   <Text numberOfLines={1} className="flex-1 text-sm text-foreground">
                     {line}
                   </Text>
                 </View>
-              ))
-            ) : (
-              <Text className="text-sm text-muted-foreground">Aucune ligne detectee.</Text>
-            )}
-          </View>
+              ))}
+            </View>
+          ) : (
+            <EmptyState
+              variant="compact"
+              icon={FileText}
+              title="Aucune ligne detectee"
+              body="Colle des paroles avec une phrase par ligne, puis nettoie si necessaire."
+              className="rounded-2xl border border-border bg-card"
+            />
+          )}
         </View>
 
         <Button
