@@ -10,6 +10,7 @@ import {
   Eye,
   FastForward,
   FileText,
+  ListChecks,
   MoreHorizontal,
   Music2,
   Pause,
@@ -19,10 +20,12 @@ import {
   Rewind,
   Search,
   Settings,
+  Sparkles,
   Undo2,
+  X,
 } from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 const SLIDES = [
@@ -135,19 +138,47 @@ type AppView = 'onboarding' | 'home' | 'editor';
 export default function IndexScreen() {
   const [view, setView] = React.useState<AppView>('onboarding');
   const [activeProject, setActiveProject] = React.useState<Project>(PROJECTS[0]);
+  const [activeLyrics, setActiveLyrics] = React.useState<LyricLineData[]>(INITIAL_LYRICS);
+  const [importOpen, setImportOpen] = React.useState(false);
 
   if (view === 'editor') {
-    return <EditorScreen project={activeProject} onBack={() => setView('home')} />;
+    return <EditorScreen project={activeProject} initialLyrics={activeLyrics} onBack={() => setView('home')} />;
   }
 
   if (view === 'home') {
     return (
-      <HomeScreen
-        onOpen={(project) => {
-          setActiveProject(project);
-          setView('editor');
-        }}
-      />
+      <>
+        <HomeScreen
+          onOpen={(project) => {
+            setActiveProject(project);
+            setActiveLyrics(INITIAL_LYRICS);
+            setView('editor');
+          }}
+          onImportLyrics={() => setImportOpen(true)}
+        />
+        {importOpen ? (
+          <ImportLyricsSheet
+            onClose={() => setImportOpen(false)}
+            onCreate={(lines) => {
+              const project: Project = {
+                id: `import-${Date.now()}`,
+                title: 'Nouveau lyrics',
+                artist: 'Import manuel',
+                duration: '00:00',
+                updated: 'maintenant',
+                synced: 0,
+                total: lines.length,
+                status: 'draft',
+                cover: ['#7C5CFF', '#F5536D'],
+              };
+              setActiveProject(project);
+              setActiveLyrics(lines.map((text) => ({ text })));
+              setImportOpen(false);
+              setView('editor');
+            }}
+          />
+        ) : null}
+      </>
     );
   }
 
@@ -229,7 +260,13 @@ function Progress({ step, onSelect }: { step: number; onSelect: (step: number) =
   );
 }
 
-function HomeScreen({ onOpen }: { onOpen: (project: Project) => void }) {
+function HomeScreen({
+  onOpen,
+  onImportLyrics,
+}: {
+  onOpen: (project: Project) => void;
+  onImportLyrics: () => void;
+}) {
   const [filter, setFilter] = React.useState<ProjectFilter>('all');
   const filteredProjects = React.useMemo(
     () => PROJECTS.filter((project) => filter === 'all' || project.status === filter),
@@ -281,11 +318,11 @@ function HomeScreen({ onOpen }: { onOpen: (project: Project) => void }) {
           </ScrollView>
 
           <View className="absolute bottom-5 left-4 right-4 flex-row gap-3">
-            <Button variant="outline" size="lg" className="h-14 flex-1 rounded-2xl bg-background/95">
+            <Button variant="outline" size="lg" onPress={onImportLyrics} className="h-14 flex-1 rounded-2xl bg-background/95">
               <Icon as={FileText} className="size-5 text-foreground" />
               <Text>Coller</Text>
             </Button>
-            <Button size="lg" className="h-14 flex-[1.35] rounded-2xl">
+            <Button size="lg" onPress={onImportLyrics} className="h-14 flex-[1.35] rounded-2xl">
               <Icon as={Plus} className="size-5 text-primary-foreground" />
               <Text>Nouveau projet</Text>
             </Button>
@@ -404,8 +441,108 @@ function ProjectRow({ project, index, onOpen }: { project: Project; index: numbe
   );
 }
 
-function EditorScreen({ project, onBack }: { project: Project; onBack: () => void }) {
-  const [lyrics, setLyrics] = React.useState(INITIAL_LYRICS);
+function ImportLyricsSheet({
+  onClose,
+  onCreate,
+}: {
+  onClose: () => void;
+  onCreate: (lines: string[]) => void;
+}) {
+  const [rawText, setRawText] = React.useState(
+    'Sous les neons\nJe cherche encore\nLes rues parlent en silence\nLa nuit garde sa cadence'
+  );
+  const cleanedText = React.useMemo(() => cleanLyrics(rawText), [rawText]);
+  const lines = React.useMemo(() => splitLyrics(cleanedText), [cleanedText]);
+  const preview = lines.slice(0, 5);
+
+  function applyCleanup() {
+    setRawText(cleanedText);
+  }
+
+  return (
+    <View className="absolute inset-0 z-50 justify-end bg-black/60">
+      <Pressable className="absolute inset-0" onPress={onClose} />
+      <View className="rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
+        <View className="mb-5 items-center">
+          <View className="h-1.5 w-12 rounded-full bg-input" />
+        </View>
+
+        <View className="mb-5 flex-row items-start justify-between gap-4">
+          <View className="flex-1">
+            <Text className="text-2xl font-semibold text-foreground">Importer lyrics</Text>
+            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
+              Colle les paroles brutes, LRX cree une ligne par phrase.
+            </Text>
+          </View>
+          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
+            <Icon as={X} className="size-5 text-foreground" />
+          </Button>
+        </View>
+
+        <View className="rounded-2xl border border-border bg-card p-3">
+          <TextInput
+            value={rawText}
+            onChangeText={setRawText}
+            multiline
+            textAlignVertical="top"
+            placeholder="Colle tes paroles ici..."
+            placeholderTextColor="#5C6068"
+            className="min-h-[160px] font-sans text-base leading-6 text-foreground"
+          />
+        </View>
+
+        <View className="mt-3 flex-row gap-2">
+          <Button variant="outline" onPress={applyCleanup} className="h-11 flex-1 rounded-xl bg-card">
+            <Icon as={Sparkles} className="size-4 text-foreground" />
+            <Text>Nettoyer</Text>
+          </Button>
+          <View className="h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-border bg-card">
+            <Icon as={ListChecks} className="size-4 text-muted-foreground" />
+            <Text className="text-sm text-muted-foreground">{lines.length} lignes</Text>
+          </View>
+        </View>
+
+        <View className="mt-5">
+          <Text className="mb-2 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">Preview</Text>
+          <View className="gap-2">
+            {preview.length ? (
+              preview.map((line, index) => (
+                <View key={`${line}-${index}`} className="flex-row items-center gap-3">
+                  <Text className="w-6 font-mono text-[11px] text-muted-foreground">{index + 1}</Text>
+                  <Text numberOfLines={1} className="flex-1 text-sm text-foreground">
+                    {line}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text className="text-sm text-muted-foreground">Aucune ligne detectee.</Text>
+            )}
+          </View>
+        </View>
+
+        <Button
+          size="lg"
+          disabled={!lines.length}
+          onPress={() => onCreate(lines)}
+          className="mt-6 h-14 rounded-2xl">
+          <Icon as={Plus} className="size-5 text-primary-foreground" />
+          <Text>Creer les lignes</Text>
+        </Button>
+      </View>
+    </View>
+  );
+}
+
+function EditorScreen({
+  project,
+  initialLyrics,
+  onBack,
+}: {
+  project: Project;
+  initialLyrics: LyricLineData[];
+  onBack: () => void;
+}) {
+  const [lyrics, setLyrics] = React.useState(initialLyrics);
   const [activeIndex, setActiveIndex] = React.useState(() => {
     const next = INITIAL_LYRICS.findIndex((line) => line.text && line.t == null);
     return next === -1 ? 0 : next;
@@ -724,6 +861,23 @@ function findPreviousLyric(lyrics: LyricLineData[], current: number) {
     if (lyrics[index].text) return index;
   }
   return current;
+}
+
+function cleanLyrics(value: string) {
+  return value
+    .replace(/\r/g, '')
+    .split('\n')
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter((line, index, lines) => line || lines[index - 1])
+    .join('\n')
+    .trim();
+}
+
+function splitLyrics(value: string) {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function formatTime(totalSeconds: number) {
