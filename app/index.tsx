@@ -22,6 +22,7 @@ import {
   ListChecks,
   Maximize2,
   Mic2,
+  Minus,
   Moon,
   MoreHorizontal,
   Music2,
@@ -1266,6 +1267,7 @@ function EditorScreen({
   const [speed, setSpeed] = React.useState<0.5 | 1 | 1.5>(1);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [karaokeOpen, setKaraokeOpen] = React.useState(false);
+  const [fineTuneOpen, setFineTuneOpen] = React.useState(false);
   const [history, setHistory] = React.useState<{ lyrics: LyricLineData[]; activeIndex: number }[]>([]);
   const [future, setFuture] = React.useState<{ lyrics: LyricLineData[]; activeIndex: number }[]>([]);
   const duration = 222;
@@ -1322,6 +1324,16 @@ function EditorScreen({
 
   function cycleSpeed() {
     setSpeed((current) => (current === 0.5 ? 1 : current === 1 ? 1.5 : 0.5));
+  }
+
+  function updateActiveTimestamp(nextTime: number) {
+    const boundedTime = Math.max(0, Math.min(duration, nextTime));
+    setHistory((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
+    setFuture([]);
+    setLyrics((items) =>
+      items.map((line, index) => (index === activeIndex ? { ...line, t: boundedTime } : line))
+    );
+    setTime(boundedTime);
   }
 
   return (
@@ -1396,9 +1408,14 @@ function EditorScreen({
                   <Icon as={FastForward} className="size-5 text-foreground" />
                 </Button>
               </View>
-              <Button variant="ghost" size="icon" onPress={() => setExportOpen(true)} className="rounded-full">
-                <Icon as={Eye} className="size-5 text-foreground" />
-              </Button>
+              <View className="flex-row items-center gap-1">
+                <Button variant="ghost" size="icon" onPress={() => setFineTuneOpen(true)} className="rounded-full">
+                  <Icon as={SlidersHorizontal} className="size-5 text-foreground" />
+                </Button>
+                <Button variant="ghost" size="icon" onPress={() => setExportOpen(true)} className="rounded-full">
+                  <Icon as={Eye} className="size-5 text-foreground" />
+                </Button>
+              </View>
             </View>
           </View>
 
@@ -1412,6 +1429,12 @@ function EditorScreen({
                 past={index < activeIndex && Boolean(line.text)}
                 onPress={() => {
                   if (line.text) setActiveIndex(index);
+                }}
+                onFineTune={() => {
+                  if (line.text) {
+                    setActiveIndex(index);
+                    setFineTuneOpen(true);
+                  }
                 }}
               />
             ))}
@@ -1435,6 +1458,19 @@ function EditorScreen({
         </ScreenBody>
       </Screen>
       {exportOpen ? <ExportSheet project={project} lyrics={lyrics} onClose={() => setExportOpen(false)} /> : null}
+      {fineTuneOpen ? (
+        <FineTuneSheet
+          line={lyrics[activeIndex]}
+          index={activeIndex}
+          time={lyrics[activeIndex]?.t ?? time}
+          duration={duration}
+          onClose={() => setFineTuneOpen(false)}
+          onSave={(nextTime) => {
+            updateActiveTimestamp(nextTime);
+            setFineTuneOpen(false);
+          }}
+        />
+      ) : null}
       {karaokeOpen ? (
         <KaraokeMode
           project={project}
@@ -1644,6 +1680,131 @@ function KaraokeMode({
   );
 }
 
+function FineTuneSheet({
+  line,
+  index,
+  time,
+  duration,
+  onClose,
+  onSave,
+}: {
+  line?: LyricLineData;
+  index: number;
+  time: number;
+  duration: number;
+  onClose: () => void;
+  onSave: (time: number) => void;
+}) {
+  const [draftTime, setDraftTime] = React.useState(time);
+  const progress = Math.max(0, Math.min(1, draftTime / duration));
+
+  function nudge(delta: number) {
+    setDraftTime((current) => Math.max(0, Math.min(duration, current + delta)));
+  }
+
+  return (
+    <View className="absolute inset-0 z-50 justify-end bg-black/60">
+      <Pressable className="absolute inset-0" onPress={onClose} />
+      <View className="rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
+        <View className="mb-5 items-center">
+          <View className="h-1.5 w-12 rounded-full bg-input" />
+        </View>
+
+        <View className="mb-5 flex-row items-start justify-between gap-4">
+          <View className="flex-1">
+            <Text className="text-2xl font-semibold text-foreground">Fine tune</Text>
+            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
+              Ajuste le timestamp de la ligne active avec precision.
+            </Text>
+          </View>
+          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
+            <Icon as={X} className="size-5 text-foreground" />
+          </Button>
+        </View>
+
+        <View className="rounded-2xl border border-border bg-card px-4 py-4">
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="font-mono text-xs text-muted-foreground">LINE {String(index + 1).padStart(2, '0')}</Text>
+            <Text className="font-mono text-xs text-primary">{line?.t == null ? 'nouveau timestamp' : 'timestamp existant'}</Text>
+          </View>
+          <Text className="text-xl font-semibold leading-7 text-foreground">{line?.text || 'Aucune ligne active'}</Text>
+        </View>
+
+        <View className="mt-5 items-center rounded-3xl border border-primary/25 bg-primary/10 px-5 py-6">
+          <Text className="font-mono text-[42px] font-semibold leading-[48px] text-foreground">{formatTime(draftTime)}</Text>
+          <Text className="mt-1 font-mono text-xs text-muted-foreground">
+            {draftTime >= time ? '+' : '-'}
+            {Math.abs(draftTime - time).toFixed(2)}s vs current
+          </Text>
+        </View>
+
+        <View className="mt-5">
+          <FineTuneTrack progress={progress} duration={duration} onChange={setDraftTime} />
+        </View>
+
+        <View className="mt-5 flex-row gap-2">
+          <NudgeButton label="-0.25" icon={Minus} onPress={() => nudge(-0.25)} />
+          <NudgeButton label="-0.05" icon={Minus} onPress={() => nudge(-0.05)} />
+          <NudgeButton label="+0.05" icon={Plus} onPress={() => nudge(0.05)} />
+          <NudgeButton label="+0.25" icon={Plus} onPress={() => nudge(0.25)} />
+        </View>
+
+        <View className="mt-5 flex-row gap-2">
+          <Button variant="outline" onPress={onClose} className="h-14 flex-1 rounded-2xl bg-card">
+            <Text>Annuler</Text>
+          </Button>
+          <Button onPress={() => onSave(draftTime)} disabled={!line?.text} className="h-14 flex-1 rounded-2xl">
+            <Icon as={Save} className="size-5 text-primary-foreground" />
+            <Text>Appliquer</Text>
+          </Button>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function FineTuneTrack({
+  progress,
+  duration,
+  onChange,
+}: {
+  progress: number;
+  duration: number;
+  onChange: (time: number) => void;
+}) {
+  const { width: windowWidth } = useWindowDimensions();
+  const width = Math.max(280, windowWidth - 40);
+  const x = Math.max(0, Math.min(width, progress * width));
+
+  return (
+    <Pressable
+      onPress={(event) => onChange(Math.max(0, Math.min(duration, (event.nativeEvent.locationX / width) * duration)))}
+      className="h-12 justify-center">
+      <View className="h-2 overflow-hidden rounded-full bg-input">
+        <View className="h-full rounded-full bg-primary" style={{ width: `${progress * 100}%` }} />
+      </View>
+      <View className="absolute top-3 size-6 rounded-full border-4 border-background bg-primary" style={{ left: x - 12 }} />
+    </Pressable>
+  );
+}
+
+function NudgeButton({
+  label,
+  icon,
+  onPress,
+}: {
+  label: string;
+  icon: LucideIcon;
+  onPress: () => void;
+}) {
+  return (
+    <Button variant="outline" onPress={onPress} className="h-12 flex-1 rounded-xl bg-card px-0">
+      <Icon as={icon} className="size-4 text-foreground" />
+      <Text className="font-mono text-xs">{label}</Text>
+    </Button>
+  );
+}
+
 function findDisplayLyric(lyrics: LyricLineData[], fromIndex: number, direction: -1 | 1) {
   for (let index = fromIndex + direction; index >= 0 && index < lyrics.length; index += direction) {
     const text = lyrics[index]?.text?.trim();
@@ -1658,12 +1819,14 @@ function LyricRow({
   active,
   past,
   onPress,
+  onFineTune,
 }: {
   line: LyricLineData;
   index: number;
   active: boolean;
   past: boolean;
   onPress: () => void;
+  onFineTune: () => void;
 }) {
   const instrumental = !line.text;
   const textClass = active
@@ -1688,7 +1851,19 @@ function LyricRow({
           <Text className="ml-2 text-[11px] uppercase tracking-[1.6px] text-muted">Instrumental</Text>
         </View>
       ) : (
-        <Text className={`min-w-0 flex-1 ${textClass}`}>{line.text}</Text>
+        <View className="min-w-0 flex-1 flex-row items-center gap-2">
+          <Text className={`min-w-0 flex-1 ${textClass}`}>{line.text}</Text>
+          {active ? (
+            <Pressable
+              onPress={(event) => {
+                event.stopPropagation();
+                onFineTune();
+              }}
+              className="size-9 items-center justify-center rounded-full border border-primary/25 bg-primary/10">
+              <Icon as={SlidersHorizontal} className="size-4 text-primary" />
+            </Pressable>
+          ) : null}
+        </View>
       )}
     </Pressable>
   );
