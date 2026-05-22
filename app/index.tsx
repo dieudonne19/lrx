@@ -1,10 +1,9 @@
 import { EmptyState, ProjectCover, Screen, ScreenBody } from '@/components/lrx';
-import { AudioPickerSheet, ImportLyricsSheet, MetadataSheet } from '@/components/lrx/sheets';
+import { AudioPickerSheet, ExportSheet, FineTuneSheet, ImportLyricsSheet, MetadataSheet } from '@/components/lrx/sheets';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import {
-  buildLrcFile,
   buildWaveformPath,
   findDisplayLyric,
   findNextLyric,
@@ -13,7 +12,6 @@ import {
   normalizeAudioTitle,
   projectLyricsToEditorLyrics,
   projectToViewProject,
-  toFileName,
 } from '@/lib/lrx-editor-utils';
 import { useLrxStore } from '@/lib/lrx-store';
 import type {
@@ -24,17 +22,11 @@ import type {
   ProjectFilter,
   SettingsPreferences,
 } from '@/lib/lrx-ui-types';
-import * as Clipboard from 'expo-clipboard';
-import { File, Paths } from 'expo-file-system';
 import { Stack } from 'expo-router';
-import * as Sharing from 'expo-sharing';
 import {
   ArrowLeft,
-  Check,
   ChevronLeft,
   ChevronRight,
-  Copy,
-  Download,
   Eye,
   FastForward,
   FileText,
@@ -42,19 +34,15 @@ import {
   Gauge,
   Maximize2,
   Mic2,
-  Minus,
   Moon,
   MoreHorizontal,
   Music2,
   Pause,
   Play,
-  Plus,
   Redo2,
   Rewind,
-  Save,
   Search,
   Settings,
-  Share2,
   ShieldAlert,
   SlidersHorizontal,
   ScrollText,
@@ -789,159 +777,6 @@ function ProjectRow({ project, index, onOpen }: { project: Project; index: numbe
   );
 }
 
-function ExportSheet({
-  project,
-  lyrics,
-  onClose,
-}: {
-  project: Project;
-  lyrics: LyricLineData[];
-  onClose: () => void;
-}) {
-  const [copied, setCopied] = React.useState(false);
-  const [shareStatus, setShareStatus] = React.useState<'idle' | 'sharing' | 'done' | 'unavailable' | 'error'>('idle');
-  const lrcText = React.useMemo(() => buildLrcFile(project, lyrics), [project, lyrics]);
-  const synced = lyrics.filter((line) => line.text && line.t != null).length;
-  const total = lyrics.filter((line) => line.text).length;
-  const hasLyrics = total > 0;
-  const hasUnsyncedLyrics = hasLyrics && synced < total;
-
-  async function copyToClipboard() {
-    if (!hasLyrics) return;
-    await Clipboard.setStringAsync(lrcText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1600);
-  }
-
-  async function shareFile() {
-    if (!hasLyrics) return;
-    setShareStatus('sharing');
-
-    try {
-      const available = await Sharing.isAvailableAsync();
-      if (!available) {
-        setShareStatus('unavailable');
-        return;
-      }
-
-      const fileName = `${toFileName(project.title)}.lrc`;
-      const file = new File(Paths.cache, fileName);
-      file.create({ overwrite: true });
-      file.write(lrcText);
-
-      await Sharing.shareAsync(file.uri, {
-        mimeType: 'text/plain',
-        UTI: 'public.plain-text',
-        dialogTitle: `Partager ${fileName}`,
-      });
-      setShareStatus('done');
-    } catch {
-      setShareStatus('error');
-    }
-  }
-
-  return (
-    <View className="absolute inset-0 z-50 justify-end bg-black/60">
-      <Pressable className="absolute inset-0" onPress={onClose} />
-      <View className="max-h-[88%] rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
-        <View className="mb-5 items-center">
-          <View className="h-1.5 w-12 rounded-full bg-input" />
-        </View>
-
-        <View className="mb-5 flex-row items-start justify-between gap-4">
-          <View className="flex-1">
-            <Text className="text-2xl font-semibold text-foreground">Export .lrc</Text>
-            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
-              Preview final avec metadonnees et timestamps synchronises.
-            </Text>
-          </View>
-          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
-            <Icon as={X} className="size-5 text-foreground" />
-          </Button>
-        </View>
-
-        {hasUnsyncedLyrics ? (
-          <View className="mb-4 flex-row items-center gap-3 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3">
-            <View className="size-10 items-center justify-center rounded-xl bg-primary/20">
-              <Icon as={ShieldAlert} className="size-5 text-primary" />
-            </View>
-            <View className="min-w-0 flex-1">
-              <Text className="text-sm font-semibold text-foreground">Export incomplet</Text>
-              <Text className="mt-0.5 text-xs leading-4 text-muted-foreground">
-                {total - synced} ligne{total - synced > 1 ? 's' : ''} sans timestamp seront marquees --:--.--.
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        <View className="mb-4 flex-row gap-2">
-          <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
-            <Text className="font-mono text-xl font-semibold text-foreground">
-              {synced}/{total}
-            </Text>
-            <Text className="mt-1 text-xs text-muted-foreground">lignes timees</Text>
-          </View>
-          <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
-            <Text className="font-mono text-xl font-semibold text-foreground">{lrcText.split('\n').length}</Text>
-            <Text className="mt-1 text-xs text-muted-foreground">lignes export</Text>
-          </View>
-        </View>
-
-        <View className="rounded-2xl border border-border bg-card">
-          <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
-            <View className="flex-row items-center gap-2">
-              <Icon as={FileText} className="size-4 text-primary" />
-              <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Preview</Text>
-            </View>
-            <Text className="font-mono text-[11px] text-muted-foreground">{toFileName(project.title)}.lrc</Text>
-          </View>
-          {hasLyrics ? (
-            <ScrollView className="h-[310px]" contentContainerClassName="px-4 py-3">
-              <Text selectable className="font-mono text-xs leading-5 text-foreground">
-                {lrcText}
-              </Text>
-            </ScrollView>
-          ) : (
-            <EmptyState
-              variant="compact"
-              icon={FileText}
-              title="Aucune lyric a exporter"
-              body="Ajoute ou importe des paroles avant de generer un fichier .lrc."
-              className="h-[310px] justify-center"
-            />
-          )}
-        </View>
-
-        <View className="mt-4 flex-row gap-2">
-          <Button
-            variant="outline"
-            onPress={copyToClipboard}
-            disabled={!hasLyrics}
-            className="h-14 flex-1 rounded-2xl bg-card">
-            <Icon as={copied ? Check : Copy} className="size-5 text-foreground" />
-            <Text>{copied ? 'Copie' : 'Copier'}</Text>
-          </Button>
-          <Button onPress={shareFile} disabled={!hasLyrics || shareStatus === 'sharing'} className="h-14 flex-1 rounded-2xl">
-            <Icon as={shareStatus === 'done' ? Check : Share2} className="size-5 text-primary-foreground" />
-            <Text>{shareStatus === 'sharing' ? 'Partage...' : 'Partager'}</Text>
-          </Button>
-        </View>
-
-        <View className="mt-3 flex-row items-center justify-center gap-2">
-          <Icon as={Download} className="size-4 text-muted-foreground" />
-          <Text className="text-center text-xs text-muted-foreground">
-            {shareStatus === 'unavailable'
-              ? 'Partage indisponible sur cette plateforme.'
-              : shareStatus === 'error'
-                ? 'Impossible de creer le fichier pour le moment.'
-                : 'Le fichier est genere localement au moment du partage.'}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 function EditorScreen({
   project,
   initialLyrics,
@@ -1385,131 +1220,6 @@ function KaraokeMode({
         </View>
       </View>
     </View>
-  );
-}
-
-function FineTuneSheet({
-  line,
-  index,
-  time,
-  duration,
-  onClose,
-  onSave,
-}: {
-  line?: LyricLineData;
-  index: number;
-  time: number;
-  duration: number;
-  onClose: () => void;
-  onSave: (time: number) => void;
-}) {
-  const [draftTime, setDraftTime] = React.useState(time);
-  const progress = Math.max(0, Math.min(1, draftTime / duration));
-
-  function nudge(delta: number) {
-    setDraftTime((current) => Math.max(0, Math.min(duration, current + delta)));
-  }
-
-  return (
-    <View className="absolute inset-0 z-50 justify-end bg-black/60">
-      <Pressable className="absolute inset-0" onPress={onClose} />
-      <View className="rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
-        <View className="mb-5 items-center">
-          <View className="h-1.5 w-12 rounded-full bg-input" />
-        </View>
-
-        <View className="mb-5 flex-row items-start justify-between gap-4">
-          <View className="flex-1">
-            <Text className="text-2xl font-semibold text-foreground">Fine tune</Text>
-            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
-              Ajuste le timestamp de la ligne active avec precision.
-            </Text>
-          </View>
-          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
-            <Icon as={X} className="size-5 text-foreground" />
-          </Button>
-        </View>
-
-        <View className="rounded-2xl border border-border bg-card px-4 py-4">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="font-mono text-xs text-muted-foreground">LINE {String(index + 1).padStart(2, '0')}</Text>
-            <Text className="font-mono text-xs text-primary">{line?.t == null ? 'nouveau timestamp' : 'timestamp existant'}</Text>
-          </View>
-          <Text className="text-xl font-semibold leading-7 text-foreground">{line?.text || 'Aucune ligne active'}</Text>
-        </View>
-
-        <View className="mt-5 items-center rounded-3xl border border-primary/25 bg-primary/10 px-5 py-6">
-          <Text className="font-mono text-[42px] font-semibold leading-[48px] text-foreground">{formatTime(draftTime)}</Text>
-          <Text className="mt-1 font-mono text-xs text-muted-foreground">
-            {draftTime >= time ? '+' : '-'}
-            {Math.abs(draftTime - time).toFixed(2)}s vs current
-          </Text>
-        </View>
-
-        <View className="mt-5">
-          <FineTuneTrack progress={progress} duration={duration} onChange={setDraftTime} />
-        </View>
-
-        <View className="mt-5 flex-row gap-2">
-          <NudgeButton label="-0.25" icon={Minus} onPress={() => nudge(-0.25)} />
-          <NudgeButton label="-0.05" icon={Minus} onPress={() => nudge(-0.05)} />
-          <NudgeButton label="+0.05" icon={Plus} onPress={() => nudge(0.05)} />
-          <NudgeButton label="+0.25" icon={Plus} onPress={() => nudge(0.25)} />
-        </View>
-
-        <View className="mt-5 flex-row gap-2">
-          <Button variant="outline" onPress={onClose} className="h-14 flex-1 rounded-2xl bg-card">
-            <Text>Annuler</Text>
-          </Button>
-          <Button onPress={() => onSave(draftTime)} disabled={!line?.text} className="h-14 flex-1 rounded-2xl">
-            <Icon as={Save} className="size-5 text-primary-foreground" />
-            <Text>Appliquer</Text>
-          </Button>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function FineTuneTrack({
-  progress,
-  duration,
-  onChange,
-}: {
-  progress: number;
-  duration: number;
-  onChange: (time: number) => void;
-}) {
-  const { width: windowWidth } = useWindowDimensions();
-  const width = Math.max(280, windowWidth - 40);
-  const x = Math.max(0, Math.min(width, progress * width));
-
-  return (
-    <Pressable
-      onPress={(event) => onChange(Math.max(0, Math.min(duration, (event.nativeEvent.locationX / width) * duration)))}
-      className="h-12 justify-center">
-      <View className="h-2 overflow-hidden rounded-full bg-input">
-        <View className="h-full rounded-full bg-primary" style={{ width: `${progress * 100}%` }} />
-      </View>
-      <View className="absolute top-3 size-6 rounded-full border-4 border-background bg-primary" style={{ left: x - 12 }} />
-    </Pressable>
-  );
-}
-
-function NudgeButton({
-  label,
-  icon,
-  onPress,
-}: {
-  label: string;
-  icon: LucideIcon;
-  onPress: () => void;
-}) {
-  return (
-    <Button variant="outline" onPress={onPress} className="h-12 flex-1 rounded-xl bg-card px-0">
-      <Icon as={icon} className="size-4 text-foreground" />
-      <Text className="font-mono text-xs">{label}</Text>
-    </Button>
   );
 }
 
