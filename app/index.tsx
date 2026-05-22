@@ -2,6 +2,7 @@ import { EmptyState, ProjectCover, Screen, ScreenBody } from '@/components/lrx';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { getLyricCount, getSyncedCount, type LrxProject, useLrxStore } from '@/lib/lrx-store';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
@@ -192,6 +193,9 @@ const DEFAULT_SETTINGS: SettingsPreferences = {
 };
 
 export default function IndexScreen() {
+  const storeProjects = useLrxStore((state) => state.projects);
+  const openStoredProject = useLrxStore((state) => state.openProject);
+  const createStoredProject = useLrxStore((state) => state.createProject);
   const [view, setView] = React.useState<AppView>('onboarding');
   const [activeProject, setActiveProject] = React.useState<Project>(PROJECTS[0]);
   const [activeLyrics, setActiveLyrics] = React.useState<LyricLineData[]>(INITIAL_LYRICS);
@@ -199,6 +203,7 @@ export default function IndexScreen() {
   const [importOpen, setImportOpen] = React.useState(false);
   const [audioOpen, setAudioOpen] = React.useState(false);
   const [metadataOpen, setMetadataOpen] = React.useState(false);
+  const homeProjects = React.useMemo(() => storeProjects.map(projectToViewProject), [storeProjects]);
 
   if (view === 'editor') {
     return (
@@ -242,9 +247,12 @@ export default function IndexScreen() {
     return (
       <>
         <HomeScreen
+          projects={homeProjects}
           onOpen={(project) => {
+            const storedProject = storeProjects.find((item) => item.id === project.id);
+            openStoredProject(project.id);
             setActiveProject(project);
-            setActiveLyrics(INITIAL_LYRICS);
+            setActiveLyrics(storedProject ? projectLyricsToEditorLyrics(storedProject) : INITIAL_LYRICS);
             setView('editor');
           }}
           onImportLyrics={() => setImportOpen(true)}
@@ -255,19 +263,16 @@ export default function IndexScreen() {
           <AudioPickerSheet
             onClose={() => setAudioOpen(false)}
             onCreate={(audioName, duration = '00:00') => {
-              const project: Project = {
-                id: `audio-${Date.now()}`,
+              const project = createStoredProject({
                 title: normalizeAudioTitle(audioName),
                 artist: 'Audio importe',
                 duration,
-                updated: 'maintenant',
-                synced: 0,
-                total: INITIAL_LYRICS.filter((line) => line.text).length,
-                status: 'draft',
+                audioName,
+                lyrics: INITIAL_LYRICS.map((line) => line.text).filter(Boolean),
                 cover: ['#7C5CFF', '#3B2BFF'],
-              };
-              setActiveProject(project);
-              setActiveLyrics(INITIAL_LYRICS.map((line) => ({ text: line.text })));
+              });
+              setActiveProject(projectToViewProject(project));
+              setActiveLyrics(projectLyricsToEditorLyrics(project));
               setAudioOpen(false);
               setView('editor');
             }}
@@ -277,19 +282,15 @@ export default function IndexScreen() {
           <ImportLyricsSheet
             onClose={() => setImportOpen(false)}
             onCreate={(lines) => {
-              const project: Project = {
-                id: `import-${Date.now()}`,
+              const project = createStoredProject({
                 title: 'Nouveau lyrics',
                 artist: 'Import manuel',
                 duration: '00:00',
-                updated: 'maintenant',
-                synced: 0,
-                total: lines.length,
-                status: 'draft',
+                lyrics: lines,
                 cover: ['#7C5CFF', '#F5536D'],
-              };
-              setActiveProject(project);
-              setActiveLyrics(lines.map((text) => ({ text })));
+              });
+              setActiveProject(projectToViewProject(project));
+              setActiveLyrics(projectLyricsToEditorLyrics(project));
               setImportOpen(false);
               setView('editor');
             }}
@@ -378,11 +379,13 @@ function Progress({ step, onSelect }: { step: number; onSelect: (step: number) =
 }
 
 function HomeScreen({
+  projects,
   onOpen,
   onImportLyrics,
   onImportAudio,
   onOpenSettings,
 }: {
+  projects: Project[];
   onOpen: (project: Project) => void;
   onImportLyrics: () => void;
   onImportAudio: () => void;
@@ -390,10 +393,10 @@ function HomeScreen({
 }) {
   const [filter, setFilter] = React.useState<ProjectFilter>('all');
   const filteredProjects = React.useMemo(
-    () => PROJECTS.filter((project) => filter === 'all' || project.status === filter),
-    [filter]
+    () => projects.filter((project) => filter === 'all' || project.status === filter),
+    [filter, projects]
   );
-  const inProgress = PROJECTS.find((project) => project.status === 'in-progress');
+  const inProgress = projects.find((project) => project.status === 'in-progress');
 
   return (
     <>
@@ -447,7 +450,7 @@ function HomeScreen({
             </View>
 
             <Text className="mt-7 text-center font-mono text-[11px] text-muted-foreground">
-              {PROJECTS.length} projets - {PROJECTS.reduce((sum, project) => sum + project.total, 0)} lignes au total
+              {projects.length} projets - {projects.reduce((sum, project) => sum + project.total, 0)} lignes au total
             </Text>
           </ScrollView>
 
@@ -1917,6 +1920,45 @@ function splitLyrics(value: string) {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function projectToViewProject(project: LrxProject): Project {
+  return {
+    id: project.id,
+    title: project.title,
+    artist: project.artist,
+    duration: project.duration,
+    updated: formatRelativeUpdated(project.updatedAt),
+    synced: getSyncedCount(project.lyrics),
+    total: getLyricCount(project.lyrics),
+    status: project.status,
+    cover: project.cover,
+    metadata: project.metadata,
+  };
+}
+
+function projectLyricsToEditorLyrics(project: LrxProject): LyricLineData[] {
+  return project.lyrics.map((line) => ({
+    text: line.text,
+    t: line.t,
+  }));
+}
+
+function formatRelativeUpdated(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'recemment';
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+  if (diffMinutes < 1) return 'maintenant';
+  if (diffMinutes < 60) return `il y a ${diffMinutes} min`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `il y a ${diffHours} h`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'hier';
+  return `il y a ${diffDays} j`;
 }
 
 function normalizeAudioTitle(fileName: string) {
