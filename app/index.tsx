@@ -1,11 +1,11 @@
 import { EmptyState, ProjectCover, Screen, ScreenBody } from '@/components/lrx';
+import { AudioPickerSheet, ImportLyricsSheet, MetadataSheet } from '@/components/lrx/sheets';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import {
   buildLrcFile,
   buildWaveformPath,
-  cleanLyrics,
   findDisplayLyric,
   findNextLyric,
   findPreviousLyric,
@@ -13,21 +13,18 @@ import {
   normalizeAudioTitle,
   projectLyricsToEditorLyrics,
   projectToViewProject,
-  splitLyrics,
   toFileName,
 } from '@/lib/lrx-editor-utils';
 import { useLrxStore } from '@/lib/lrx-store';
 import type {
   AppView,
   DefaultSpeed,
-  LrcMetadata,
   LyricLineData,
   Project,
   ProjectFilter,
   SettingsPreferences,
 } from '@/lib/lrx-ui-types';
 import * as Clipboard from 'expo-clipboard';
-import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import { Stack } from 'expo-router';
 import * as Sharing from 'expo-sharing';
@@ -43,7 +40,6 @@ import {
   FileText,
   FolderOpen,
   Gauge,
-  ListChecks,
   Maximize2,
   Mic2,
   Minus,
@@ -61,11 +57,9 @@ import {
   Share2,
   ShieldAlert,
   SlidersHorizontal,
-  Sparkles,
   ScrollText,
   Smartphone,
   Sun,
-  Tag,
   Undo2,
   Upload,
   Vibrate,
@@ -73,7 +67,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 const SLIDES = [
@@ -162,12 +156,6 @@ const EDITOR_WAVEFORM = Array.from({ length: 64 }, (_, index) => {
   const value = Math.abs(Math.sin(index * 0.42) * Math.cos(index * 0.19));
   return 0.18 + value * 0.82;
 });
-
-const RECENT_AUDIO = [
-  { name: 'neons_final_mix.wav', size: '42.8 MB', duration: '03:42' },
-  { name: 'voice_memo_hook.m4a', size: '8.1 MB', duration: '01:41' },
-  { name: 'after_hours_demo.mp3', size: '6.6 MB', duration: '02:58' },
-];
 
 const DEFAULT_SETTINGS: SettingsPreferences = {
   theme: 'dark',
@@ -801,206 +789,6 @@ function ProjectRow({ project, index, onOpen }: { project: Project; index: numbe
   );
 }
 
-function AudioPickerSheet({
-  onClose,
-  onCreate,
-}: {
-  onClose: () => void;
-  onCreate: (audioName: string, duration?: string) => void;
-}) {
-  const [picking, setPicking] = React.useState(false);
-  const recentAudio = RECENT_AUDIO;
-
-  async function pickAudio() {
-    setPicking(true);
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'audio/*',
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-
-      if (!result.canceled) {
-        const asset = result.assets[0];
-        onCreate(asset.name || 'audio-import');
-      }
-    } finally {
-      setPicking(false);
-    }
-  }
-
-  return (
-    <View className="absolute inset-0 z-50 justify-end bg-black/60">
-      <Pressable className="absolute inset-0" onPress={onClose} />
-      <View className="rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
-        <View className="mb-5 items-center">
-          <View className="h-1.5 w-12 rounded-full bg-input" />
-        </View>
-
-        <View className="mb-5 flex-row items-start justify-between gap-4">
-          <View className="flex-1">
-            <Text className="text-2xl font-semibold text-foreground">Importer audio</Text>
-            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
-              Choisis un fichier audio pour creer une session LRC.
-            </Text>
-          </View>
-          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
-            <Icon as={X} className="size-5 text-foreground" />
-          </Button>
-        </View>
-
-        <Pressable
-          onPress={pickAudio}
-          className="items-center justify-center rounded-3xl border border-dashed border-primary/60 bg-primary/10 px-5 py-8">
-          <View className="mb-4 size-14 items-center justify-center rounded-2xl bg-primary">
-            <Icon as={Upload} className="size-7 text-primary-foreground" />
-          </View>
-          <Text className="text-base font-semibold text-foreground">
-            {picking ? 'Ouverture...' : 'Choisir un fichier audio'}
-          </Text>
-          <Text className="mt-1 text-center text-sm leading-5 text-muted-foreground">
-            MP3, WAV, M4A ou AAC. La lecture reelle sera branchee avec expo-av ensuite.
-          </Text>
-        </Pressable>
-
-        <View className="mt-6">
-          <Text className="mb-3 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">
-            Recents
-          </Text>
-          {recentAudio.length ? (
-            <View className="gap-2">
-              {recentAudio.map((audio) => (
-                <Pressable
-                  key={audio.name}
-                  onPress={() => onCreate(audio.name, audio.duration)}
-                  className="flex-row items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3">
-                  <View className="size-11 items-center justify-center rounded-xl bg-input">
-                    <Icon as={FolderOpen} className="size-5 text-muted-foreground" />
-                  </View>
-                  <View className="min-w-0 flex-1">
-                    <Text numberOfLines={1} className="text-sm font-medium text-foreground">
-                      {audio.name}
-                    </Text>
-                    <Text className="mt-0.5 text-xs text-muted-foreground">
-                      {audio.size} - {audio.duration}
-                    </Text>
-                  </View>
-                  <Icon as={ChevronRight} className="size-5 text-muted-foreground" />
-                </Pressable>
-              ))}
-            </View>
-          ) : (
-            <EmptyState
-              variant="compact"
-              icon={FolderOpen}
-              title="Aucun audio recent"
-              body="Importe un fichier depuis ton appareil pour commencer une session."
-              cta="Choisir audio"
-              onCta={pickAudio}
-              className="rounded-2xl border border-border bg-card"
-            />
-          )}
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function MetadataSheet({
-  project,
-  onClose,
-  onSave,
-}: {
-  project: Project;
-  onClose: () => void;
-  onSave: (metadata: LrcMetadata) => void;
-}) {
-  const [metadata, setMetadata] = React.useState<LrcMetadata>({
-    title: project.metadata?.title ?? project.title,
-    artist: project.metadata?.artist ?? project.artist,
-    album: project.metadata?.album ?? '',
-    author: project.metadata?.author ?? '',
-    genre: project.metadata?.genre ?? '',
-  });
-
-  function updateField(field: keyof LrcMetadata, value: string) {
-    setMetadata((current) => ({ ...current, [field]: value }));
-  }
-
-  return (
-    <View className="absolute inset-0 z-50 justify-end bg-black/60">
-      <Pressable className="absolute inset-0" onPress={onClose} />
-      <View className="rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
-        <View className="mb-5 items-center">
-          <View className="h-1.5 w-12 rounded-full bg-input" />
-        </View>
-
-        <View className="mb-5 flex-row items-start justify-between gap-4">
-          <View className="flex-1">
-            <Text className="text-2xl font-semibold text-foreground">Metadata LRC</Text>
-            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
-              Ces infos seront ajoutees en entete du fichier exporte.
-            </Text>
-          </View>
-          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
-            <Icon as={X} className="size-5 text-foreground" />
-          </Button>
-        </View>
-
-        <View className="gap-3">
-          <MetadataField label="Title" value={metadata.title} onChange={(value) => updateField('title', value)} />
-          <MetadataField label="Artist" value={metadata.artist} onChange={(value) => updateField('artist', value)} />
-          <MetadataField label="Album" value={metadata.album} onChange={(value) => updateField('album', value)} />
-          <MetadataField label="Author" value={metadata.author} onChange={(value) => updateField('author', value)} />
-          <MetadataField label="Genre" value={metadata.genre} onChange={(value) => updateField('genre', value)} />
-        </View>
-
-        <View className="mt-5 rounded-2xl border border-border bg-card px-4 py-3">
-          <View className="mb-2 flex-row items-center gap-2">
-            <Icon as={Tag} className="size-4 text-primary" />
-            <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Preview tags</Text>
-          </View>
-          <Text className="font-mono text-xs leading-5 text-muted-foreground">[ti:{metadata.title || project.title}]</Text>
-          <Text className="font-mono text-xs leading-5 text-muted-foreground">[ar:{metadata.artist || project.artist}]</Text>
-          {metadata.album ? <Text className="font-mono text-xs leading-5 text-muted-foreground">[al:{metadata.album}]</Text> : null}
-          {metadata.author ? <Text className="font-mono text-xs leading-5 text-muted-foreground">[by:{metadata.author}]</Text> : null}
-          {metadata.genre ? <Text className="font-mono text-xs leading-5 text-muted-foreground">[re:{metadata.genre}]</Text> : null}
-        </View>
-
-        <Button size="lg" onPress={() => onSave(metadata)} className="mt-6 h-14 rounded-2xl">
-          <Icon as={Save} className="size-5 text-primary-foreground" />
-          <Text>Enregistrer</Text>
-        </Button>
-      </View>
-    </View>
-  );
-}
-
-function MetadataField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <View className="rounded-2xl border border-border bg-card px-4 py-3">
-      <Text className="mb-1 text-[11px] font-semibold uppercase tracking-[1.6px] text-muted-foreground">
-        {label}
-      </Text>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={label}
-        placeholderTextColor="#5C6068"
-        className="text-base text-foreground"
-      />
-    </View>
-  );
-}
-
 function ExportSheet({
   project,
   lyrics,
@@ -1149,104 +937,6 @@ function ExportSheet({
                 : 'Le fichier est genere localement au moment du partage.'}
           </Text>
         </View>
-      </View>
-    </View>
-  );
-}
-
-function ImportLyricsSheet({
-  onClose,
-  onCreate,
-}: {
-  onClose: () => void;
-  onCreate: (lines: string[]) => void;
-}) {
-  const [rawText, setRawText] = React.useState(
-    'Sous les neons\nJe cherche encore\nLes rues parlent en silence\nLa nuit garde sa cadence'
-  );
-  const cleanedText = React.useMemo(() => cleanLyrics(rawText), [rawText]);
-  const lines = React.useMemo(() => splitLyrics(cleanedText), [cleanedText]);
-  const preview = lines.slice(0, 5);
-
-  function applyCleanup() {
-    setRawText(cleanedText);
-  }
-
-  return (
-    <View className="absolute inset-0 z-50 justify-end bg-black/60">
-      <Pressable className="absolute inset-0" onPress={onClose} />
-      <View className="rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
-        <View className="mb-5 items-center">
-          <View className="h-1.5 w-12 rounded-full bg-input" />
-        </View>
-
-        <View className="mb-5 flex-row items-start justify-between gap-4">
-          <View className="flex-1">
-            <Text className="text-2xl font-semibold text-foreground">Importer lyrics</Text>
-            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
-              Colle les paroles brutes, LRX cree une ligne par phrase.
-            </Text>
-          </View>
-          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
-            <Icon as={X} className="size-5 text-foreground" />
-          </Button>
-        </View>
-
-        <View className="rounded-2xl border border-border bg-card p-3">
-          <TextInput
-            value={rawText}
-            onChangeText={setRawText}
-            multiline
-            textAlignVertical="top"
-            placeholder="Colle tes paroles ici..."
-            placeholderTextColor="#5C6068"
-            className="min-h-[160px] font-sans text-base leading-6 text-foreground"
-          />
-        </View>
-
-        <View className="mt-3 flex-row gap-2">
-          <Button variant="outline" onPress={applyCleanup} className="h-11 flex-1 rounded-xl bg-card">
-            <Icon as={Sparkles} className="size-4 text-foreground" />
-            <Text>Nettoyer</Text>
-          </Button>
-          <View className="h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-border bg-card">
-            <Icon as={ListChecks} className="size-4 text-muted-foreground" />
-            <Text className="text-sm text-muted-foreground">{lines.length} lignes</Text>
-          </View>
-        </View>
-
-        <View className="mt-5">
-          <Text className="mb-2 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">Preview</Text>
-          {preview.length ? (
-            <View className="gap-2">
-              {preview.map((line, index) => (
-                <View key={`${line}-${index}`} className="flex-row items-center gap-3">
-                  <Text className="w-6 font-mono text-[11px] text-muted-foreground">{index + 1}</Text>
-                  <Text numberOfLines={1} className="flex-1 text-sm text-foreground">
-                    {line}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <EmptyState
-              variant="compact"
-              icon={FileText}
-              title="Aucune ligne detectee"
-              body="Colle des paroles avec une phrase par ligne, puis nettoie si necessaire."
-              className="rounded-2xl border border-border bg-card"
-            />
-          )}
-        </View>
-
-        <Button
-          size="lg"
-          disabled={!lines.length}
-          onPress={() => onCreate(lines)}
-          className="mt-6 h-14 rounded-2xl">
-          <Icon as={Plus} className="size-5 text-primary-foreground" />
-          <Text>Creer les lignes</Text>
-        </Button>
       </View>
     </View>
   );
