@@ -52,6 +52,7 @@
     "expo-system-ui": "~55.0.16",
     "expo-updates": "~55.0.21",
     "lucide-react-native": "^0.545.0",
+    "magic-string": "^0.30.21",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.6",
