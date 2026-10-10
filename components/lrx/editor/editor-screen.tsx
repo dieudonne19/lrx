@@ -204,6 +204,7 @@ function EditorSession({
               />
             ) : (
               <EditorWaveform
+                seed={project.id}
                 progress={duration ? time / duration : 0}
                 marks={lyrics.map((line) => line.t)}
                 duration={duration}

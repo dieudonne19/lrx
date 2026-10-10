@@ -20,16 +20,25 @@ function generateWaveform(count: number, seed: number) {
   });
 }
 
-const EDITOR_WAVEFORM = generateWaveform(220, 11);
+// Extracting real amplitudes needs a native module (not available in Expo Go), so the shape is a
+// simplified envelope seeded per project: it is stable for a project but does not follow the audio.
+function seedFromId(id: string) {
+  let seed = 7;
+  for (let index = 0; index < id.length; index += 1) seed = (seed * 31 + id.charCodeAt(index)) % 233280;
+  return seed || 11;
+}
+
 const HEIGHT = 68;
 const SIDE_PADDING = 36;
 
 export function EditorWaveform({
+  seed,
   progress,
   marks,
   duration,
   onSeek,
 }: {
+  seed: string;
   progress: number;
   marks: (number | undefined)[];
   duration: number;
@@ -37,7 +46,10 @@ export function EditorWaveform({
 }) {
   const { width: windowWidth } = useWindowDimensions();
   const width = Math.max(280, windowWidth - SIDE_PADDING);
-  const path = React.useMemo(() => buildWaveformPath(EDITOR_WAVEFORM, width, HEIGHT), [width]);
+  const path = React.useMemo(
+    () => buildWaveformPath(generateWaveform(220, seedFromId(seed)), width, HEIGHT),
+    [seed, width]
+  );
   const playheadX = Math.max(0, Math.min(width, progress * width));
 
   return (
