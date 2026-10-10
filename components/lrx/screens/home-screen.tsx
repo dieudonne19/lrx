@@ -6,7 +6,7 @@ import { Text } from '@/components/ui/text';
 import type { Project, ProjectFilter } from '@/lib/lrx-ui-types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
-import { ChevronRight, FolderOpen, MoreHorizontal, Plus, Rows3, Search, Settings } from 'lucide-react-native';
+import { ChevronRight, MoreHorizontal, Plus, Rows3, Search, Settings } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -53,39 +53,51 @@ export function HomeScreen({
           </View>
 
           <ScrollView className="flex-1" contentContainerClassName="pb-28" showsVerticalScrollIndicator={false}>
-            <View className="px-5 pb-[18px] pt-3.5">
-              <Text className="text-2xl font-semibold leading-7 tracking-[-0.48px] text-foreground">Tes projets</Text>
-              <Text className="mt-1 text-xs leading-4 text-muted-foreground">
-                Reprends une session ou commence une nouvelle synchro.
-              </Text>
-            </View>
+            {projects.length === 0 ? (
+              <EmptyState
+                illustration="projects"
+                title="Aucun projet"
+                body="Importe un fichier audio pour commencer ta première synchronisation."
+                cta="Nouveau projet"
+                onCta={onImportAudio}
+              />
+            ) : (
+              <>
+                <View className="px-5 pb-[18px] pt-3.5">
+                  <Text className="text-2xl font-semibold leading-7 tracking-[-0.48px] text-foreground">Tes projets</Text>
+                  <Text className="mt-1 text-xs leading-4 text-muted-foreground">
+                    Reprends une session ou commence une nouvelle synchro.
+                  </Text>
+                </View>
 
-            {inProgress ? <ResumeProject project={inProgress} onOpen={onOpen} /> : null}
+                {inProgress ? <ResumeProject project={inProgress} onOpen={onOpen} /> : null}
 
-            <FilterTabs projects={projects} filter={filter} onChange={setFilter} />
+                <FilterTabs projects={projects} filter={filter} onChange={setFilter} />
 
-            <View className="pt-1">
-              {filteredProjects.length ? (
-                filteredProjects.map((project, index) => (
-                  <ProjectRow key={project.id} project={project} index={index} onOpen={onOpen} onMore={onMore} />
-                ))
-              ) : (
-                <EmptyState
-                  icon={FolderOpen}
-                  title="Aucun projet ici"
-                  body="Change de filtre ou demarre une nouvelle session LRC avec un audio ou des lyrics."
-                  cta="Import audio"
-                  onCta={onImportAudio}
-                  secondaryCta="Coller lyrics"
-                  onSecondaryCta={onImportLyrics}
-                  className="mx-4 rounded-3xl border border-border bg-card/45"
-                />
-              )}
-            </View>
+                <View className="pt-1">
+                  {filteredProjects.length ? (
+                    filteredProjects.map((project, index) => (
+                      <ProjectRow key={project.id} project={project} index={index} onOpen={onOpen} onMore={onMore} />
+                    ))
+                  ) : (
+                    <EmptyState
+                      illustration="projects"
+                      title="Aucun projet ici"
+                      body="Change de filtre ou démarre une nouvelle session LRC avec un audio ou des paroles."
+                      cta="Nouveau projet"
+                      onCta={onImportAudio}
+                      secondaryCta="Coller des paroles"
+                      onSecondaryCta={onImportLyrics}
+                      className="mx-4 rounded-3xl border border-border bg-card/45"
+                    />
+                  )}
+                </View>
 
-            <Text className="mt-7 text-center font-mono text-[11px] text-muted-foreground">
-              {projects.length} projets - {projects.reduce((sum, project) => sum + project.total, 0)} lignes au total
-            </Text>
+                <Text className="mt-7 text-center font-mono text-[11px] text-muted-foreground">
+                  {projects.length} projets - {projects.reduce((sum, project) => sum + project.total, 0)} lignes au total
+                </Text>
+              </>
+            )}
           </ScrollView>
 
           <Fade direction="up" className="absolute bottom-0 left-0 right-0 h-[110px]" />

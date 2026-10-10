@@ -16,7 +16,7 @@ import { useLrxStore, type LrxProject } from '@/lib/lrx-store';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
-import { ArrowLeft, ChevronLeft, ChevronRight, Eye, FastForward, FileText, Maximize2, MoreHorizontal, Pause, Play, Redo2, Rewind, SlidersHorizontal, Undo2 } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Eye, FastForward, Maximize2, MoreHorizontal, Pause, Play, Redo2, Rewind, SlidersHorizontal, Undo2 } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { EditorWaveform } from './editor-waveform';
@@ -251,9 +251,9 @@ function EditorSession({
 
           {lyrics.length === 0 ? (
             <EmptyState
-              icon={FileText}
+              illustration="lyrics"
               title="Pas encore de paroles"
-              body="Colle les paroles de ce titre pour commencer a poser les timestamps."
+              body="Colle les paroles de ce titre pour commencer à poser les timestamps."
               cta="Importer des paroles"
               onCta={() => setImportOpen(true)}
             />
