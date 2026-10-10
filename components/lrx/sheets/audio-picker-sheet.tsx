@@ -1,7 +1,6 @@
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { getAudioFileError, saveAudioFile } from '@/lib/audio-files';
-import * as DocumentPicker from 'expo-document-picker';
+import { getAudioFileError, pickAudioFile, saveAudioFile } from '@/lib/audio-files';
 import { TriangleAlert, Upload } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, View } from 'react-native';
@@ -25,22 +24,16 @@ export function AudioPickerSheet({
     setPicking(true);
     setError(null);
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'audio/*',
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      if (result.canceled) return;
+      const file = await pickAudioFile();
+      if (!file) return;
 
-      const asset = result.assets[0];
-      const name = asset.name || 'audio-import';
-      const problem = getAudioFileError({ name, size: asset.size });
+      const problem = getAudioFileError({ name: file.name, size: file.size });
       if (problem) {
         setError(problem);
         return;
       }
 
-      onPicked({ name, uri: saveAudioFile(asset.uri, name) });
+      onPicked({ name: file.name, uri: await saveAudioFile(file) });
     } catch {
       setError('Impossible de lire ce fichier. Vérifie qu’il est accessible, puis réessaie.');
     } finally {

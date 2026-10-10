@@ -10,7 +10,7 @@ function getExtension(name: string) {
 }
 
 // Returns a user-facing message when the picked file cannot be used, otherwise null.
-export function getAudioFileError(asset: { name?: string; size?: number }) {
+export function getAudioFileError(asset: { name?: string; size?: number | null }) {
   const extension = getExtension(asset.name ?? '');
   if (extension && !SUPPORTED_EXTENSIONS.includes(extension)) {
     return `Le format .${extension} n’est pas pris en charge. Utilise MP3, WAV, M4A, AAC, FLAC ou OGG.`;
@@ -21,14 +21,21 @@ export function getAudioFileError(asset: { name?: string; size?: number }) {
   return null;
 }
 
-// The picker returns a cache copy that the system may purge, so keep a durable copy in the app documents.
-export function saveAudioFile(sourceUri: string, name: string) {
+// Opens the system picker. The returned File comes from the same module as the copy below, so it is
+// readable without extra permissions (the document picker's cache file was rejected with "Missing READ permission").
+export async function pickAudioFile() {
+  const picked = await File.pickFileAsync({ mimeTypes: 'audio/*' });
+  return picked.canceled ? null : picked.result;
+}
+
+// The picked file may live outside the app and can disappear, so keep a durable copy in the app documents.
+export async function saveAudioFile(source: File) {
   const directory = new Directory(Paths.document, 'audio');
   directory.create({ idempotent: true, intermediates: true });
 
-  const extension = getExtension(name);
-  const baseName = toFileName(name.replace(/\.[^/.]+$/, ''));
+  const extension = getExtension(source.name);
+  const baseName = toFileName(source.name.replace(/\.[^/.]+$/, ''));
   const target = new File(directory, `${Date.now().toString(36)}-${baseName}${extension ? `.${extension}` : ''}`);
-  new File(sourceUri).copy(target);
+  await source.copy(target);
   return target.uri;
 }
