@@ -9,15 +9,17 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Check, Copy, Download, FileText, Share2, ShieldAlert, X } from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 export function ExportSheet({
   project,
   lyrics,
+  confirmUnsynced = false,
   onClose,
 }: {
   project: Project;
   lyrics: LyricLineData[];
+  confirmUnsynced?: boolean;
   onClose: () => void;
 }) {
   const [copied, setCopied] = React.useState(false);
@@ -27,6 +29,22 @@ export function ExportSheet({
   const total = lyrics.filter((line) => line.text).length;
   const hasLyrics = total > 0;
   const hasUnsyncedLyrics = hasLyrics && synced < total;
+
+  function confirmIfUnsynced(onConfirm: () => void) {
+    if (!confirmUnsynced || !hasUnsyncedLyrics) {
+      onConfirm();
+      return;
+    }
+    const missing = total - synced;
+    Alert.alert(
+      'Export incomplet',
+      `${missing} ligne${missing > 1 ? 's' : ''} sans timestamp seront marquees --:--.--. Exporter quand meme ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Exporter', onPress: onConfirm },
+      ]
+    );
+  }
 
   async function copyToClipboard() {
     if (!hasLyrics) return;
@@ -137,13 +155,13 @@ export function ExportSheet({
         <View className="mt-4 flex-row gap-2">
           <Button
             variant="outline"
-            onPress={copyToClipboard}
+            onPress={() => confirmIfUnsynced(copyToClipboard)}
             disabled={!hasLyrics}
             className="h-14 flex-1 rounded-2xl bg-card">
             <Icon as={copied ? Check : Copy} className="size-5 text-foreground" />
             <Text>{copied ? 'Copie' : 'Copier'}</Text>
           </Button>
-          <Button onPress={shareFile} disabled={!hasLyrics || shareStatus === 'sharing'} className="h-14 flex-1 rounded-2xl">
+          <Button onPress={() => confirmIfUnsynced(shareFile)} disabled={!hasLyrics || shareStatus === 'sharing'} className="h-14 flex-1 rounded-2xl">
             <Icon as={shareStatus === 'done' ? Check : Share2} className="size-5 text-primary-foreground" />
             <Text>{shareStatus === 'sharing' ? 'Partage...' : 'Partager'}</Text>
           </Button>

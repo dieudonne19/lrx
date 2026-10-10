@@ -292,7 +292,14 @@ function EditorSession({
           }}
         />
       ) : null}
-      {exportOpen ? <ExportSheet project={project} lyrics={lyrics} onClose={() => setExportOpen(false)} /> : null}
+      {exportOpen ? (
+        <ExportSheet
+          project={project}
+          lyrics={lyrics}
+          confirmUnsynced={settings.confirmUnsyncedExport}
+          onClose={() => setExportOpen(false)}
+        />
+      ) : null}
       {fineTuneOpen ? (
         <FineTuneSheet
           line={lyrics[activeIndex]}
