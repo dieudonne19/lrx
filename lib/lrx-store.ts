@@ -64,6 +64,7 @@ type LrxStoreActions = {
   updateLyricText: (projectId: string, lineId: string, text: string) => void;
   updateTimestamp: (projectId: string, lineId: string, time: number) => void;
   clearTimestamp: (projectId: string, lineId: string) => void;
+  restoreLyrics: (projectId: string, lyrics: LrxLyricLine[]) => void;
   saveMetadata: (projectId: string, metadata: LrxMetadata) => void;
   updateSettings: (settings: Partial<LrxSettings>) => void;
   resetToSeed: () => void;
@@ -209,6 +210,17 @@ export const useLrxStore = create<LrxStore>()(
               updatedAt: nowIso(),
             };
           }),
+        }));
+      },
+
+      restoreLyrics: (projectId, lyrics) => {
+        set((state) => ({
+          projects: updateProject(state.projects, projectId, (project) => ({
+            ...project,
+            lyrics,
+            status: getProjectStatus(lyrics),
+            updatedAt: nowIso(),
+          })),
         }));
       },
 
