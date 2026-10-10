@@ -392,10 +392,12 @@ function updateProject(projects: LrxProject[], projectId: string, update: (proje
   return projects.map((project) => (project.id === projectId ? update(project) : project));
 }
 
+// A project with no synchronized line is a draft, even after its last timestamp is undone.
 function getProjectStatus(lyrics: LrxLyricLine[]): LrxProjectStatus {
   const total = getLyricCount(lyrics);
-  if (!total) return 'draft';
-  return getSyncedCount(lyrics) === total ? 'done' : 'in-progress';
+  const synced = getSyncedCount(lyrics);
+  if (!total || !synced) return 'draft';
+  return synced === total ? 'done' : 'in-progress';
 }
 
 function createId(prefix: string) {
