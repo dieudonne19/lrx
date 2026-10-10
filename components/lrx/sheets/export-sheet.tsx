@@ -5,9 +5,9 @@ import { Text } from '@/components/ui/text';
 import { buildLrcFile, toFileName } from '@/lib/lrx-editor-utils';
 import type { LyricLineData, Project } from '@/lib/lrx-ui-types';
 import * as Clipboard from 'expo-clipboard';
-import { File, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { Check, Copy, Download, FileText, Share2, ShieldAlert, X } from 'lucide-react-native';
+import { Check, Copy, FileText, Save, Share2, ShieldAlert, X } from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
@@ -24,6 +24,7 @@ export function ExportSheet({
 }) {
   const [copied, setCopied] = React.useState(false);
   const [shareStatus, setShareStatus] = React.useState<'idle' | 'sharing' | 'done' | 'unavailable' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = React.useState<'idle' | 'saving' | 'done' | 'error'>('idle');
   const lrcText = React.useMemo(() => buildLrcFile(project, lyrics), [project, lyrics]);
   const synced = lyrics.filter((line) => line.text && line.t != null).length;
   const total = lyrics.filter((line) => line.text).length;
@@ -51,6 +52,20 @@ export function ExportSheet({
     await Clipboard.setStringAsync(lrcText);
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
+  }
+
+  async function saveToDevice() {
+    if (!hasLyrics) return;
+    setSaveStatus('saving');
+
+    try {
+      const directory = await Directory.pickDirectoryAsync();
+      const file = directory.createFile(`${toFileName(project.title)}.lrc`, 'text/plain');
+      file.write(lrcText);
+      setSaveStatus('done');
+    } catch {
+      setSaveStatus('error');
+    }
   }
 
   async function shareFile() {
@@ -152,31 +167,43 @@ export function ExportSheet({
           )}
         </View>
 
-        <View className="mt-4 flex-row gap-2">
+        <View className="mt-4 gap-2">
+          <View className="flex-row gap-2">
+            <Button
+              variant="outline"
+              onPress={() => confirmIfUnsynced(copyToClipboard)}
+              disabled={!hasLyrics}
+              className="h-14 flex-1 rounded-2xl bg-card">
+              <Icon as={copied ? Check : Copy} className="size-5 text-foreground" />
+              <Text>{copied ? 'Copie' : 'Copier'}</Text>
+            </Button>
+            <Button
+              variant="outline"
+              onPress={() => confirmIfUnsynced(saveToDevice)}
+              disabled={!hasLyrics || saveStatus === 'saving'}
+              className="h-14 flex-1 rounded-2xl bg-card">
+              <Icon as={saveStatus === 'done' ? Check : Save} className="size-5 text-foreground" />
+              <Text>{saveStatus === 'saving' ? 'Enregistrement...' : saveStatus === 'done' ? 'Enregistre' : 'Enregistrer'}</Text>
+            </Button>
+          </View>
           <Button
-            variant="outline"
-            onPress={() => confirmIfUnsynced(copyToClipboard)}
-            disabled={!hasLyrics}
-            className="h-14 flex-1 rounded-2xl bg-card">
-            <Icon as={copied ? Check : Copy} className="size-5 text-foreground" />
-            <Text>{copied ? 'Copie' : 'Copier'}</Text>
-          </Button>
-          <Button onPress={() => confirmIfUnsynced(shareFile)} disabled={!hasLyrics || shareStatus === 'sharing'} className="h-14 flex-1 rounded-2xl">
+            onPress={() => confirmIfUnsynced(shareFile)}
+            disabled={!hasLyrics || shareStatus === 'sharing'}
+            className="h-14 rounded-2xl">
             <Icon as={shareStatus === 'done' ? Check : Share2} className="size-5 text-primary-foreground" />
             <Text>{shareStatus === 'sharing' ? 'Partage...' : 'Partager'}</Text>
           </Button>
         </View>
 
-        <View className="mt-3 flex-row items-center justify-center gap-2">
-          <Icon as={Download} className="size-4 text-muted-foreground" />
-          <Text className="text-center text-xs text-muted-foreground">
-            {shareStatus === 'unavailable'
+        <Text className="mt-3 text-center text-xs text-muted-foreground">
+          {saveStatus === 'error'
+            ? 'Aucun dossier choisi, ou ecriture impossible.'
+            : shareStatus === 'unavailable'
               ? 'Partage indisponible sur cette plateforme.'
               : shareStatus === 'error'
                 ? 'Impossible de creer le fichier pour le moment.'
-                : 'Le fichier est genere localement au moment du partage.'}
-          </Text>
-        </View>
+                : 'Enregistrer : tu choisis le dossier. Partager : envoie le fichier vers une autre app.'}
+        </Text>
       </View>
     </View>
   );
