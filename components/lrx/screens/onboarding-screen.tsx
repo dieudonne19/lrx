@@ -142,7 +142,7 @@ function TapArt() {
         <Text className="text-sm text-muted-foreground">Sous les neons</Text>
         <Text className="text-sm text-muted-foreground">Je cherche encore</Text>
         <Text className="text-lg font-semibold text-foreground">Les rues parlent en silence</Text>
-        <Text className="text-sm text-muted">La nuit garde sa cadence</Text>
+        <Text className="text-sm text-subtle">La nuit garde sa cadence</Text>
       </View>
 
       <View className="absolute bottom-8 h-16 w-[220px] items-center justify-center rounded-2xl border border-primary bg-primary">

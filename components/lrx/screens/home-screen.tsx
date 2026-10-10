@@ -206,13 +206,13 @@ function ProjectRow({
           <Text numberOfLines={1} className="max-w-[128px] text-xs text-muted-foreground">
             {project.artist}
           </Text>
-          <Text className="text-xs text-muted">-</Text>
+          <Text className="text-xs text-subtle">-</Text>
           <Text className="font-mono text-xs text-muted-foreground">{project.duration}</Text>
         </View>
       </View>
       <View className="items-end">
         <Text className={`text-[11px] font-semibold tracking-[1px] ${statusClass}`}>{statusText}</Text>
-        <Text className="mt-1 text-[10px] text-muted">{project.updated}</Text>
+        <Text className="mt-1 text-[10px] text-subtle">{project.updated}</Text>
       </View>
       <Button
         variant="ghost"

@@ -40,7 +40,7 @@ export function LyricRow({
     ? 'text-[22px] font-semibold leading-7 text-foreground'
     : past
       ? 'text-base leading-6 text-muted-foreground'
-      : 'text-base leading-6 text-muted';
+      : 'text-base leading-6 text-subtle';
   const timestamp = line.t == null ? (active ? '....' : '') : formatTime(line.t);
 
   return (
@@ -54,10 +54,10 @@ export function LyricRow({
       </Text>
       {instrumental ? (
         <View className="flex-row items-center gap-1.5">
-          <View className="size-1 rounded-full bg-muted" />
-          <View className="size-1 rounded-full bg-muted" />
-          <View className="size-1 rounded-full bg-muted" />
-          <Text className="ml-2 text-[11px] uppercase tracking-[1.6px] text-muted">Instrumental</Text>
+          <View className="size-1 rounded-full bg-faint" />
+          <View className="size-1 rounded-full bg-faint" />
+          <View className="size-1 rounded-full bg-faint" />
+          <Text className="ml-2 text-[11px] uppercase tracking-[1.6px] text-subtle">Instrumental</Text>
         </View>
       ) : (
         <View className="min-w-0 flex-1 flex-row items-center gap-2">
