@@ -7,7 +7,8 @@
     "android": "expo start -c --android",
     "ios": "expo start -c --ios",
     "web": "expo start -c --web",
-    "clean": "rm -rf .expo node_modules"
+    "clean": "rm -rf .expo node_modules",
+    "test": "jest"
   },
   "dependencies": {
     "@expo-google-fonts/geist": "^0.4.2",
@@ -78,10 +79,19 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.2.10",
+    "jest": "^30.5.2",
+    "jest-expo": "~57.0.5",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "typescript": "~6.0.3"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    }
+  }
 }
