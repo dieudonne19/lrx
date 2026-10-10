@@ -1,4 +1,5 @@
 import { Text } from '@/components/ui/text';
+import { PRIMARY, PRIMARY_GRADIENT } from '@/lib/brand';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as React from 'react';
 import { Pressable, View } from 'react-native';
@@ -52,11 +53,11 @@ export function TapTimeButton({
           if (touchHandledRef.current) touchHandledRef.current = false;
           else tap();
         }}
-        style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.45, shadowRadius: 20, shadowOffset: { width: 0, height: 14 }, elevation: 10 }}
+        style={{ shadowColor: PRIMARY, shadowOpacity: 0.45, shadowRadius: 20, shadowOffset: { width: 0, height: 14 }, elevation: 10 }}
         className="h-16 rounded-[18px]">
         <Animated.View pointerEvents="none" style={ringStyle} className="absolute inset-0 rounded-[18px] border-2 border-primary-hi" />
         <View className="h-16 flex-row items-center justify-center gap-3 overflow-hidden rounded-[18px] px-[18px]">
-          <LinearGradient colors={['#9A82FF', '#7C5CFF']} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
+          <LinearGradient colors={PRIMARY_GRADIENT} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
           <View
             style={{ shadowColor: '#FFFFFF', shadowOpacity: 0.8, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } }}
             className={`size-2 rounded-full bg-white ${playing ? 'opacity-100' : 'opacity-60'}`}

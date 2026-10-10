@@ -1,3 +1,4 @@
+import { COVERS } from '@/lib/brand';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react-native';
 import { View } from 'react-native';
@@ -13,7 +14,7 @@ type ProjectCoverProps = React.ComponentProps<typeof View> & {
 
 function ProjectCover({
   className,
-  colors = ['#7C5CFF', '#3B2BFF'],
+  colors = COVERS.violet,
   size = 48,
   index = 0,
   status,

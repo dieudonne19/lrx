@@ -3,6 +3,7 @@ import { Fade } from '@/components/lrx/fade';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { PRIMARY, primaryAlpha } from '@/lib/brand';
 import type { Project, ProjectFilter } from '@/lib/lrx-ui-types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
@@ -109,7 +110,7 @@ export function HomeScreen({
             <Button
               size="lg"
               onPress={onImportAudio}
-              style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6 }}
+              style={{ shadowColor: PRIMARY, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6 }}
               className="h-14 flex-[1.4] rounded-2xl">
               <Icon as={Plus} className="size-[18px] text-primary-foreground" />
               <Text>Nouveau projet</Text>
@@ -130,7 +131,7 @@ function ResumeProject({ project, onOpen }: { project: Project; onOpen: (project
         onPress={() => onOpen(project)}
         className="flex-row items-center gap-3.5 overflow-hidden rounded-2xl border border-primary/15 p-4">
         <LinearGradient
-          colors={['rgba(124, 92, 255, 0.18)', 'rgba(124, 92, 255, 0.04)']}
+          colors={[primaryAlpha(0.18), primaryAlpha(0.04)]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}

@@ -1,5 +1,6 @@
 import { HomeScreen } from '@/components/lrx/screens';
 import { AudioPickerSheet, ImportLyricsSheet, MetadataSheet, MoreSheet } from '@/components/lrx/sheets';
+import { COVERS } from '@/lib/brand';
 import { confirmDeleteProject } from '@/lib/confirm';
 import { normalizeAudioTitle, projectToViewProject } from '@/lib/lrx-editor-utils';
 import { findProjectByAudio, useLrxStore } from '@/lib/lrx-store';
@@ -91,7 +92,7 @@ export default function HomeRoute() {
               audioName: audio.name,
               audioUri: audio.uri,
               audioSize: audio.size,
-              cover: ['#7C5CFF', '#3B2BFF'],
+              cover: COVERS.violet,
             });
             setAudioOpen(false);
             openEditor(project.id);
@@ -109,7 +110,7 @@ export default function HomeRoute() {
               artist: 'Import manuel',
               duration: '00:00',
               lyrics: lines,
-              cover: ['#7C5CFF', '#F5536D'],
+              cover: COVERS.rose,
             });
             setImportOpen(false);
             openEditor(project.id);

@@ -1,6 +1,7 @@
 import { resolveFontFamily } from '@/lib/fonts';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { primaryAlpha } from '@/lib/brand';
 import { formatTime } from '@/lib/lrx-editor-utils';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
 import { SlidersHorizontal } from 'lucide-react-native';
@@ -9,7 +10,7 @@ import { LayoutChangeEvent, Pressable, TextInput, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 
 // Active line treatment from the mockup (highlight style "glow").
-const GLOW = { textShadowColor: 'rgba(124, 92, 255, 0.45)', textShadowRadius: 24, textShadowOffset: { width: 0, height: 0 } };
+const GLOW = { textShadowColor: primaryAlpha(0.45), textShadowRadius: 24, textShadowOffset: { width: 0, height: 0 } };
 
 export function LyricRow({
   line,

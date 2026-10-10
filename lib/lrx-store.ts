@@ -1,6 +1,7 @@
 import Storage from 'expo-sqlite/kv-store';
 import { AppState } from 'react-native';
 import { create } from 'zustand';
+import { COVERS } from './brand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 
 export type LrxProjectStatus = 'done' | 'draft' | 'in-progress';
@@ -134,7 +135,7 @@ const SEED_PROJECTS: LrxProject[] = [
     duration: '03:42',
     updatedAt: new Date('2026-05-21T12:00:00.000Z').toISOString(),
     status: 'in-progress',
-    cover: ['#7C5CFF', '#3B2BFF'],
+    cover: COVERS.violet,
     lyrics: [
       { text: 'Sous les neons', t: 2.14 },
       { text: 'Je cherche encore', t: 5.82 },
@@ -149,7 +150,7 @@ const SEED_PROJECTS: LrxProject[] = [
     duration: '02:58',
     updatedAt: new Date('2026-05-20T16:30:00.000Z').toISOString(),
     status: 'done',
-    cover: ['#3FD17A', '#0A7F55'],
+    cover: COVERS.green,
     lyrics: [
       { text: 'Lights on the pavement', t: 0.72 },
       { text: 'We move through the static', t: 4.2 },
@@ -366,7 +367,7 @@ function createProjectFromInput(input: CreateProjectInput): LrxProject {
     duration: input.duration ?? '00:00',
     updatedAt: nowIso(),
     status: 'draft',
-    cover: input.cover ?? ['#7C5CFF', '#3B2BFF'],
+    cover: input.cover ?? COVERS.violet,
     audioName: input.audioName,
     audioUri: input.audioUri,
     audioSize: input.audioSize,

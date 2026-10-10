@@ -3,6 +3,7 @@ import { Fade } from '@/components/lrx/fade';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { PRIMARY, primaryAlpha } from '@/lib/brand';
 import { formatTime } from '@/lib/lrx-editor-utils';
 import type { LyricLineData, Project } from '@/lib/lrx-ui-types';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,7 +14,7 @@ import { ScrollView, View } from 'react-native';
 import { usePlaybackTime } from './use-editor-audio';
 
 const ROW_HEIGHT = 56;
-const GLOW = { textShadowColor: 'rgba(124, 92, 255, 0.5)', textShadowRadius: 32, textShadowOffset: { width: 0, height: 0 } };
+const GLOW = { textShadowColor: primaryAlpha(0.5), textShadowRadius: 32, textShadowOffset: { width: 0, height: 0 } };
 
 // The active line follows the playback time: the last synchronized line whose timestamp has passed.
 function findLineAtTime(lyrics: LyricLineData[], time: number) {
@@ -57,7 +58,7 @@ export function KaraokeMode({
   return (
     <Screen className="absolute inset-0 z-50">
       <LinearGradient
-        colors={['rgba(124, 92, 255, 0.18)', 'rgba(124, 92, 255, 0)']}
+        colors={[primaryAlpha(0.18), primaryAlpha(0)]}
         style={{ position: 'absolute', top: 0, right: 0, left: 0, height: 320 }}
       />
 
@@ -71,7 +72,7 @@ export function KaraokeMode({
 
       <View className="items-center gap-3 px-8 pb-3 pt-5">
         <View
-          style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.35, shadowRadius: 30, shadowOffset: { width: 0, height: 24 }, elevation: 12 }}>
+          style={{ shadowColor: PRIMARY, shadowOpacity: 0.35, shadowRadius: 30, shadowOffset: { width: 0, height: 24 }, elevation: 12 }}>
           <ProjectCover colors={project.cover} size={88} index={0} />
         </View>
         <View className="items-center">
