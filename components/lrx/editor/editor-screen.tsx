@@ -357,19 +357,12 @@ function EditorSession({
         <KaraokeMode
           project={project}
           lyrics={lyrics}
-          activeIndex={activeIndex}
           time={time}
           duration={duration}
           playing={playing}
-          speed={speed}
-          synced={synced}
-          total={total}
           onClose={() => setKaraokeOpen(false)}
-          onTapTime={tapTime}
-          onAdvance={advance}
-          onRetreat={retreat}
           onTogglePlay={() => setPlaying((current) => !current)}
-          onCycleSpeed={cycleSpeed}
+          onSeekBy={(seconds) => setTime((current) => Math.max(0, Math.min(duration, current + seconds)))}
         />
       ) : null}
     </>

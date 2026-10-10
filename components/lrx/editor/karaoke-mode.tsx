@@ -1,125 +1,144 @@
+import { ProjectCover, Screen } from '@/components/lrx';
+import { Fade } from '@/components/lrx/fade';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { findDisplayLyric, formatTime } from '@/lib/lrx-editor-utils';
+import { formatTime } from '@/lib/lrx-editor-utils';
 import type { LyricLineData, Project } from '@/lib/lrx-ui-types';
-import { ChevronLeft, ChevronRight, Mic2, Pause, Play, X } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ChevronDown, FastForward, Pause, Play, Rewind } from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+
+const ROW_HEIGHT = 56;
+const GLOW = { textShadowColor: 'rgba(124, 92, 255, 0.5)', textShadowRadius: 32, textShadowOffset: { width: 0, height: 0 } };
+
+// The active line follows the playback time: the last synchronized line whose timestamp has passed.
+function findLineAtTime(lyrics: LyricLineData[], time: number) {
+  let active = -1;
+  lyrics.forEach((line, index) => {
+    if (line.t != null && line.t <= time) active = index;
+  });
+  return active;
+}
 
 export function KaraokeMode({
   project,
   lyrics,
-  activeIndex,
   time,
   duration,
   playing,
-  speed,
-  synced,
-  total,
   onClose,
-  onTapTime,
-  onAdvance,
-  onRetreat,
   onTogglePlay,
-  onCycleSpeed,
+  onSeekBy,
 }: {
   project: Project;
   lyrics: LyricLineData[];
-  activeIndex: number;
   time: number;
   duration: number;
   playing: boolean;
-  speed: 0.5 | 1 | 1.5;
-  synced: number;
-  total: number;
   onClose: () => void;
-  onTapTime: () => void;
-  onAdvance: () => void;
-  onRetreat: () => void;
   onTogglePlay: () => void;
-  onCycleSpeed: () => void;
+  onSeekBy: (seconds: number) => void;
 }) {
-  const previousLine = findDisplayLyric(lyrics, activeIndex, -1);
-  const activeLine = lyrics[activeIndex]?.text || 'Aucune ligne active';
-  const nextLine = findDisplayLyric(lyrics, activeIndex, 1);
+  const scrollRef = React.useRef<ScrollView>(null);
+  const [viewportHeight, setViewportHeight] = React.useState(0);
+  const activeIndex = React.useMemo(() => findLineAtTime(lyrics, time), [lyrics, time]);
   const progress = Math.max(0, Math.min(1, time / duration));
+  const edgePadding = Math.max(0, viewportHeight / 2 - ROW_HEIGHT / 2);
+
+  React.useEffect(() => {
+    scrollRef.current?.scrollTo({ y: Math.max(0, activeIndex) * ROW_HEIGHT, animated: true });
+  }, [activeIndex, viewportHeight]);
 
   return (
-    <View className="absolute inset-0 z-50 bg-background">
-      <View className="absolute left-0 right-0 top-0 h-52 bg-primary/10" />
-      <View className="flex-1 px-5 pb-5 pt-4">
-        <View className="flex-row items-center justify-between">
-          <View className="min-w-0 flex-1">
-            <View className="flex-row items-center gap-2">
-              <Icon as={Mic2} className="size-4 text-primary" />
-              <Text className="text-xs font-semibold uppercase tracking-[2px] text-primary">Karaoke mode</Text>
-            </View>
-            <Text numberOfLines={1} className="mt-2 text-xl font-semibold text-foreground">
-              {project.title}
-            </Text>
-            <Text className="mt-1 text-xs text-muted-foreground">
-              {synced}/{total} lignes - {speed}x
-            </Text>
-          </View>
-          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
-            <Icon as={X} className="size-5 text-foreground" />
-          </Button>
-        </View>
+    <Screen className="absolute inset-0 z-50">
+      <LinearGradient
+        colors={['rgba(124, 92, 255, 0.18)', 'rgba(124, 92, 255, 0)']}
+        style={{ position: 'absolute', top: 0, right: 0, left: 0, height: 320 }}
+      />
 
-        <View className="mt-8 h-2 overflow-hidden rounded-full bg-input">
-          <View className="h-full rounded-full bg-primary" style={{ width: `${progress * 100}%` }} />
-        </View>
-        <View className="mt-2 flex-row justify-between">
-          <Text className="font-mono text-xs text-muted-foreground">{formatTime(time)}</Text>
-          <Text className="font-mono text-xs text-muted-foreground">{formatTime(duration)}</Text>
-        </View>
+      <View className="flex-row items-center justify-between px-3 pb-2 pt-3">
+        <Button variant="ghost" size="icon" accessibilityLabel="Fermer l’aperçu" onPress={onClose} className="size-12 rounded-full">
+          <Icon as={ChevronDown} className="size-5 text-foreground" />
+        </Button>
+        <Text className="text-[11px] font-semibold uppercase tracking-[1.32px] text-primary-hi">Aperçu live</Text>
+        <View className="size-12" />
+      </View>
 
-        <View className="flex-1 justify-center">
-          <Text numberOfLines={2} className="mb-8 text-center text-lg leading-7 text-muted-foreground opacity-60">
-            {previousLine || ' '}
+      <View className="items-center gap-3 px-8 pb-3 pt-5">
+        <View
+          style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.35, shadowRadius: 30, shadowOffset: { width: 0, height: 24 }, elevation: 12 }}>
+          <ProjectCover colors={project.cover} size={88} index={0} />
+        </View>
+        <View className="items-center">
+          <Text numberOfLines={1} className="text-[17px] font-semibold text-foreground">
+            {project.title}
           </Text>
-
-          <View className="items-center">
-            <View className="mb-5 rounded-full border border-primary/35 bg-primary/10 px-4 py-2">
-              <Text className="font-mono text-xs font-semibold text-primary">
-                {lyrics[activeIndex]?.t == null ? 'READY' : formatTime(lyrics[activeIndex].t)}
-              </Text>
-            </View>
-            <Text className="text-center text-[34px] font-semibold leading-[42px] text-foreground">
-              {activeLine}
-            </Text>
-          </View>
-
-          <Text numberOfLines={2} className="mt-8 text-center text-lg leading-7 text-muted-foreground opacity-70">
-            {nextLine || ' '}
+          <Text numberOfLines={1} className="mt-0.5 text-[13px] text-muted-foreground">
+            {project.artist}
           </Text>
-        </View>
-
-        <View className="mb-4 flex-row items-center justify-center gap-3">
-          <Button variant="outline" size="icon" onPress={onRetreat} className="size-12 rounded-full bg-card">
-            <Icon as={ChevronLeft} className="size-5 text-foreground" />
-          </Button>
-          <Button variant="outline" size="icon" onPress={onTogglePlay} className="size-14 rounded-full bg-foreground">
-            <Icon as={playing ? Pause : Play} className="size-6 text-background" />
-          </Button>
-          <Button variant="outline" size="icon" onPress={onAdvance} className="size-12 rounded-full bg-card">
-            <Icon as={ChevronRight} className="size-5 text-foreground" />
-          </Button>
-        </View>
-
-        <View className="flex-row items-center gap-2">
-          <Button variant="outline" onPress={onCycleSpeed} className="h-16 w-20 rounded-2xl bg-card px-0">
-            <Text className="font-mono text-sm">{speed}x</Text>
-          </Button>
-          <Pressable
-            onPress={onTapTime}
-            className="h-16 flex-1 flex-row items-center justify-center gap-3 rounded-2xl bg-primary px-5">
-            <View className={`size-2 rounded-full bg-white ${playing ? 'opacity-100' : 'opacity-60'}`} />
-            <Text className="text-[15px] font-bold uppercase tracking-[3px] text-primary-foreground">Tap Time</Text>
-          </Pressable>
         </View>
       </View>
-    </View>
+
+      <View className="flex-1" onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}>
+        <ScrollView
+          ref={scrollRef}
+          scrollEnabled={false}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: edgePadding, paddingBottom: edgePadding }}>
+          {lyrics.map((line, index) => {
+            const distance = Math.abs(index - activeIndex);
+            const active = index === activeIndex;
+            const opacity = distance > 3 ? Math.max(0, 1 - (distance - 3) * 0.3) : 1;
+            const color = active ? 'text-foreground' : distance <= 2 ? 'text-muted-foreground' : 'text-subtle';
+
+            return (
+              <View key={line.id ?? index} style={{ height: ROW_HEIGHT, opacity }} className="items-center justify-center px-8">
+                <Text
+                  numberOfLines={2}
+                  style={active ? GLOW : undefined}
+                  className={`text-center tracking-[-0.3px] ${color} ${
+                    active ? 'text-[22px] font-semibold' : 'text-[17px]'
+                  } ${line.text ? '' : 'italic'}`}>
+                  {line.text || '· · ·'}
+                </Text>
+              </View>
+            );
+          })}
+        </ScrollView>
+        <Fade direction="down" className="absolute left-0 right-0 top-0 h-20" />
+        <Fade direction="up" className="absolute bottom-0 left-0 right-0 h-[100px]" />
+      </View>
+
+      <View className="px-7 pb-[22px]">
+        <View
+          accessibilityRole="progressbar"
+          accessibilityValue={{ min: 0, max: Math.round(duration), now: Math.round(time) }}
+          className="mb-2 h-[3px] overflow-hidden rounded-full bg-secondary">
+          <View className="h-full bg-primary" style={{ width: `${progress * 100}%` }} />
+        </View>
+        <View className="mb-2.5 flex-row justify-between">
+          <Text className="font-mono text-[11px] text-muted-foreground">{formatTime(time)}</Text>
+          <Text className="font-mono text-[11px] text-muted-foreground">{formatTime(duration)}</Text>
+        </View>
+        <View className="flex-row items-center justify-center gap-[18px]">
+          <Button variant="ghost" size="icon" accessibilityLabel="Reculer de 5 secondes" onPress={() => onSeekBy(-5)} className="size-12 rounded-full">
+            <Icon as={Rewind} className="size-[22px] text-foreground" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            accessibilityLabel={playing ? 'Pause' : 'Lecture'}
+            onPress={onTogglePlay}
+            className="size-14 rounded-full border-0 bg-foreground">
+            <Icon as={playing ? Pause : Play} className="size-[22px] text-background" />
+          </Button>
+          <Button variant="ghost" size="icon" accessibilityLabel="Avancer de 5 secondes" onPress={() => onSeekBy(5)} className="size-12 rounded-full">
+            <Icon as={FastForward} className="size-[22px] text-foreground" />
+          </Button>
+        </View>
+      </View>
+    </Screen>
   );
 }
