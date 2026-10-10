@@ -23,9 +23,9 @@ Le projet mobile est bien initialise avec Expo, TypeScript, Expo Router, Uniwind
 
 ### Projet Expo / React Native
 
-- `expo` installe en version `~55.0.19`.
-- `react-native` installe en version `0.83.6`.
-- `react` installe en version `19.2.0`.
+- `expo` installe en version `~57.0.27` (SDK 57, migre depuis le SDK 55).
+- `react-native` installe en version `0.86.3`.
+- `react` installe en version `19.2.3`.
 - `main` configure sur `expo-router/entry` dans `package.json`.
 - Scripts disponibles :
   - `pnpm dev`
@@ -38,10 +38,11 @@ Le projet mobile est bien initialise avec Expo, TypeScript, Expo Router, Uniwind
 - `tsconfig.json` present.
 - `strict: true` active.
 - Alias `@/*` configure vers la racine du projet.
+- TypeScript `~6.0.3` ; `ignoreDeprecations: "6.0"` ajoute pour `baseUrl`.
 
 ### Expo Router
 
-- `expo-router` installe en version `~55.0.13`.
+- `expo-router` installe en version `~57.0.25`.
 - Plugin `expo-router` declare dans `app.json`.
 - Routes de base presentes :
   - `app/_layout.tsx`
@@ -95,7 +96,7 @@ La liste prioritaire demandee est donc installee.
 
 Sont deja presentes :
 
-- `expo-av` pour l'audio.
+- `expo-audio` (a installer) pour l'audio ; `expo-av` a ete retire car deprecie.
 - `expo-document-picker` pour l'import de fichiers.
 - `expo-file-system` pour les fichiers locaux et l'export.
 - `expo-haptics` pour le feedback tactile TAP TIME.
@@ -198,3 +199,16 @@ La Phase 1 est validee :
 ## Prochaine action recommandee
 
 Demarrer la Phase 2 : convertir le theme de `maquette/lrx-tokens.css` vers `global.css` et `lib/theme.ts`, puis preparer les composants UI partages LRX (`Screen`, `TopBar`, `IconButton`, `ProjectCover`, `EmptyState`).
+
+## Mise a jour - migration Expo SDK 57
+
+- Migration du SDK 55 vers le SDK 57 (Expo `~57.0.27`, React Native `0.86.3`, React `19.2.3`).
+- `@expo/dom-webview` `~57.0.1` installe explicitement (il restait en 55.0.6).
+- `app.json` : la cle `splash` a ete deplacee dans la config du plugin `expo-splash-screen`.
+- `expo-av` retire (deprecie) ; la lecture audio utilisera `expo-audio`, a installer quand elle sera branchee.
+- Verification : `expo-doctor` 21/21 et `tsc --noEmit` sans erreur. Execution de l'app non testee.
+- Sauvegardes : `package.json.bak-sdk55b`, `pnpm-lock.yaml.bak-sdk55`.
+- Correctif SDK 56+ : `expo-router` n'est plus compatible avec `@react-navigation` ; `ThemeProvider`, `DefaultTheme`, `DarkTheme` et `Theme` s'importent desormais depuis `expo-router/react-navigation` (`app/_layout.tsx`, `lib/theme.ts`) et la dependance `@react-navigation/native` a ete retiree.
+- Verification : `expo export --platform android` construit le bundle (3300 modules).
+- Refactor : l'editeur a ete extrait de `app/index.tsx` vers `components/lrx/editor/`.
+- Store source-of-truth : `EditorScreen` prend un `projectId` et lit/ecrit les paroles via le store (nouvelle action `restoreLyrics` pour undo/redo) ; `index.tsx` utilise `activeProjectId` du store ; les Settings sont branches sur `settings`/`updateSettings` ; le mock `PROJECTS` est supprime.
