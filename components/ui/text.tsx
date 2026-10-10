@@ -1,3 +1,4 @@
+import { resolveFontFamily } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { Slot } from '@rn-primitives/slot';
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -76,12 +77,14 @@ function Text({
   }) {
   const textClass = React.useContext(TextClassContext);
   const Component = asChild ? Slot : RNText;
+  const resolvedClass = cn(textVariants({ variant }), textClass, className);
   return (
     <Component
-      className={cn(textVariants({ variant }), textClass, className)}
+      className={resolvedClass}
       role={variant ? ROLE[variant] : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}
       {...props}
+      style={[{ fontFamily: resolveFontFamily(resolvedClass) }, props.style]}
     />
   );
 }

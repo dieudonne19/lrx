@@ -1,3 +1,4 @@
+import { resolveFontFamily } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { Platform, TextInput } from 'react-native';
 
@@ -33,6 +34,7 @@ function Textarea({
       numberOfLines={numberOfLines}
       textAlignVertical="top"
       {...props}
+      style={[{ fontFamily: resolveFontFamily(className) }, props.style]}
     />
   );
 }

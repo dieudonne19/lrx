@@ -1,3 +1,4 @@
+import { resolveFontFamily } from '@/lib/fonts';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { formatTime } from '@/lib/lrx-editor-utils';
@@ -69,6 +70,7 @@ export function LyricRow({
               onBlur={() => onCommitEdit(draft)}
               returnKeyType="done"
               blurOnSubmit
+              style={{ fontFamily: resolveFontFamily(textClass) }}
               className={`min-w-0 flex-1 rounded-lg border border-primary/40 bg-card px-2 py-1 ${textClass}`}
             />
           ) : (

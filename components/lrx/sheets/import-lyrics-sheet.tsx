@@ -1,3 +1,4 @@
+import { resolveFontFamily } from '@/lib/fonts';
 import { EmptyState } from '@/components/lrx';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -55,7 +56,8 @@ export function ImportLyricsSheet({
             textAlignVertical="top"
             placeholder="Colle tes paroles ici..."
             placeholderTextColor="#5C6068"
-            className="min-h-[160px] font-sans text-base leading-6 text-foreground"
+            style={{ fontFamily: resolveFontFamily() }}
+            className="min-h-[160px] text-base leading-6 text-foreground"
           />
         </View>
 

@@ -1,3 +1,4 @@
+import { resolveFontFamily } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -95,6 +96,7 @@ function MetadataField({
         onChangeText={onChange}
         placeholder={label}
         placeholderTextColor="#5C6068"
+        style={{ fontFamily: resolveFontFamily() }}
         className="text-base text-foreground"
       />
     </View>
