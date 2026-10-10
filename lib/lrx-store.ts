@@ -29,6 +29,8 @@ export type LrxProject = {
   status: LrxProjectStatus;
   cover: [string, string];
   audioName?: string;
+  audioUri?: string;
+  durationSec?: number;
   metadata: LrxMetadata;
   lyrics: LrxLyricLine[];
 };
@@ -46,6 +48,7 @@ export type CreateProjectInput = {
   artist?: string;
   duration?: string;
   audioName?: string;
+  audioUri?: string;
   lyrics?: string[];
   cover?: [string, string];
 };
@@ -67,6 +70,8 @@ type LrxStoreActions = {
   clearTimestamp: (projectId: string, lineId: string) => void;
   restoreLyrics: (projectId: string, lyrics: LrxLyricLine[]) => void;
   saveMetadata: (projectId: string, metadata: LrxMetadata) => void;
+  attachAudio: (projectId: string, audio: { name: string; uri: string }) => void;
+  setDuration: (projectId: string, seconds: number) => void;
   updateSettings: (settings: Partial<LrxSettings>) => void;
   completeOnboarding: () => void;
   resetToSeed: () => void;
@@ -237,6 +242,28 @@ export const useLrxStore = create<LrxStore>()(
         }));
       },
 
+      attachAudio: (projectId, audio) => {
+        set((state) => ({
+          projects: updateProject(state.projects, projectId, (project) => ({
+            ...project,
+            audioName: audio.name,
+            audioUri: audio.uri,
+            durationSec: undefined,
+            updatedAt: nowIso(),
+          })),
+        }));
+      },
+
+      setDuration: (projectId, seconds) => {
+        set((state) => ({
+          projects: updateProject(state.projects, projectId, (project) =>
+            project.durationSec === seconds
+              ? project
+              : { ...project, durationSec: seconds, duration: formatDuration(seconds) }
+          ),
+        }));
+      },
+
       updateSettings: (settings) => {
         set((state) => ({ settings: { ...state.settings, ...settings } }));
       },
@@ -271,6 +298,12 @@ export function selectActiveProject(state: LrxStore) {
   return state.projects.find((project) => project.id === state.activeProjectId) ?? null;
 }
 
+export function formatDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
 export function getSyncedCount(lyrics: LrxLyricLine[]) {
   return lyrics.filter((line) => line.text.trim() && line.t != null).length;
 }
@@ -292,6 +325,7 @@ function createProjectFromInput(input: CreateProjectInput): LrxProject {
     status: 'draft',
     cover: input.cover ?? ['#7C5CFF', '#3B2BFF'],
     audioName: input.audioName,
+    audioUri: input.audioUri,
     metadata: {
       title,
       artist,

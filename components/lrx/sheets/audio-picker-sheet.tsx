@@ -1,40 +1,48 @@
-import { EmptyState } from '@/components/lrx';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { getAudioFileError, saveAudioFile } from '@/lib/audio-files';
 import * as DocumentPicker from 'expo-document-picker';
-import { ChevronRight, FolderOpen, Upload } from 'lucide-react-native';
+import { TriangleAlert, Upload } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, View } from 'react-native';
 import { Sheet, SheetHeader } from './sheet';
 
-const RECENT_AUDIO = [
-  { name: 'neons_final_mix.wav', size: '42.8 MB', duration: '03:42' },
-  { name: 'voice_memo_hook.m4a', size: '8.1 MB', duration: '01:41' },
-  { name: 'after_hours_demo.mp3', size: '6.6 MB', duration: '02:58' },
-];
+export type PickedAudio = { name: string; uri: string };
 
 export function AudioPickerSheet({
+  title = 'Importer un audio',
   onClose,
-  onCreate,
+  onPicked,
 }: {
+  title?: string;
   onClose: () => void;
-  onCreate: (audioName: string, duration?: string) => void;
+  onPicked: (audio: PickedAudio) => void;
 }) {
   const [picking, setPicking] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   async function pickAudio() {
     setPicking(true);
+    setError(null);
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'audio/*',
         copyToCacheDirectory: true,
         multiple: false,
       });
+      if (result.canceled) return;
 
-      if (!result.canceled) {
-        const asset = result.assets[0];
-        onCreate(asset.name || 'audio-import');
+      const asset = result.assets[0];
+      const name = asset.name || 'audio-import';
+      const problem = getAudioFileError({ name, size: asset.size });
+      if (problem) {
+        setError(problem);
+        return;
       }
+
+      onPicked({ name, uri: saveAudioFile(asset.uri, name) });
+    } catch {
+      setError('Impossible de lire ce fichier. Vérifie qu’il est accessible, puis réessaie.');
     } finally {
       setPicking(false);
     }
@@ -42,9 +50,11 @@ export function AudioPickerSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <SheetHeader title="Importer audio" subtitle="Choisis un fichier audio pour créer une session LRC." onClose={onClose} />
+      <SheetHeader title={title} subtitle="Choisis un fichier audio de ton appareil." onClose={onClose} />
 
       <Pressable
+        accessibilityRole="button"
+        disabled={picking}
         onPress={pickAudio}
         className="items-center justify-center rounded-3xl border border-dashed border-primary/60 bg-primary/10 px-5 py-8">
         <View className="mb-4 size-14 items-center justify-center rounded-2xl bg-primary">
@@ -54,48 +64,16 @@ export function AudioPickerSheet({
           {picking ? 'Ouverture…' : 'Choisir un fichier audio'}
         </Text>
         <Text className="mt-1 text-center text-sm leading-5 text-muted-foreground">
-          MP3, WAV, M4A ou AAC. La lecture reelle sera branchee avec expo-audio ensuite.
+          MP3, WAV, M4A, AAC, FLAC ou OGG, 100 Mo maximum.
         </Text>
       </Pressable>
 
-      <View className="mt-6">
-        <Text className="mb-3 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">
-          Recents
-        </Text>
-        {RECENT_AUDIO.length ? (
-          <View className="gap-2">
-            {RECENT_AUDIO.map((audio) => (
-              <Pressable
-                key={audio.name}
-                onPress={() => onCreate(audio.name, audio.duration)}
-                className="flex-row items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3">
-                <View className="size-11 items-center justify-center rounded-xl bg-input">
-                  <Icon as={FolderOpen} className="size-5 text-muted-foreground" />
-                </View>
-                <View className="min-w-0 flex-1">
-                  <Text numberOfLines={1} className="text-sm font-medium text-foreground">
-                    {audio.name}
-                  </Text>
-                  <Text className="mt-0.5 text-xs text-muted-foreground">
-                    {audio.size} - {audio.duration}
-                  </Text>
-                </View>
-                <Icon as={ChevronRight} className="size-5 text-muted-foreground" />
-              </Pressable>
-            ))}
-          </View>
-        ) : (
-          <EmptyState
-            variant="compact"
-            icon={FolderOpen}
-            title="Aucun audio récent"
-            body="Importe un fichier depuis ton appareil pour commencer une session."
-            cta="Choisir un audio"
-            onCta={pickAudio}
-            className="rounded-2xl border border-border bg-card"
-          />
-        )}
-      </View>
+      {error ? (
+        <View accessibilityRole="alert" className="mt-4 flex-row items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3">
+          <Icon as={TriangleAlert} className="mt-0.5 size-4 text-destructive" />
+          <Text className="min-w-0 flex-1 text-sm leading-5 text-foreground">{error}</Text>
+        </View>
+      ) : null}
     </Sheet>
   );
 }

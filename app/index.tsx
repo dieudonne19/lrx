@@ -66,12 +66,12 @@ export default function HomeRoute() {
       {audioOpen ? (
         <AudioPickerSheet
           onClose={() => setAudioOpen(false)}
-          onCreate={(audioName, duration = '00:00') => {
+          onPicked={(audio) => {
             const project = createStoredProject({
-              title: normalizeAudioTitle(audioName),
-              artist: 'Audio importe',
-              duration,
-              audioName,
+              title: normalizeAudioTitle(audio.name),
+              artist: 'Audio importé',
+              audioName: audio.name,
+              audioUri: audio.uri,
               cover: ['#7C5CFF', '#3B2BFF'],
             });
             setAudioOpen(false);
