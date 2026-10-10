@@ -4,6 +4,7 @@ import {
   findNextLyric,
   findPreviousLyric,
   formatTime,
+  getLrcFileName,
   normalizeAudioTitle,
   splitLyrics,
   toFileName,
@@ -134,5 +135,31 @@ describe('buildLrcFile', () => {
       []
     );
     expect(file.split('\n')[0]).toBe('[ti:A live version]');
+  });
+});
+
+describe('getLrcFileName', () => {
+  it('uses the music file name with a .lrc extension', () => {
+    expect(getLrcFileName({ title: 'Titre du projet', audioName: 'Sous les néons - Master v3.mp3' })).toBe(
+      'Sous les néons - Master v3.lrc'
+    );
+  });
+
+  it('only drops the last extension of the music file', () => {
+    expect(getLrcFileName({ title: 'x', audioName: 'a.b.c.wav' })).toBe('a.b.c.lrc');
+  });
+
+  it('removes characters file systems reject but keeps case and accents', () => {
+    expect(getLrcFileName({ title: 'x', audioName: 'Été: "Live" / 2/3?.m4a' })).toBe('Été Live 2 3.lrc');
+  });
+
+  it('falls back to the title when there is no audio', () => {
+    expect(getLrcFileName({ title: 'Mes paroles' })).toBe('Mes paroles.lrc');
+    expect(getLrcFileName({ title: 'Mes paroles', audioName: '   ' })).toBe('Mes paroles.lrc');
+  });
+
+  it('never returns an empty name', () => {
+    expect(getLrcFileName({ title: '???' })).toBe('lyrics.lrc');
+    expect(getLrcFileName({ title: '', audioName: '.mp3' })).toBe('lyrics.lrc');
   });
 });

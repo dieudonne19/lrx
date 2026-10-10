@@ -70,6 +70,7 @@ export function projectToViewProject(project: LrxProject): Project {
     total: getLyricCount(project.lyrics),
     status: project.status,
     cover: project.cover,
+    audioName: project.audioName,
     metadata: project.metadata,
   };
 }
@@ -129,6 +130,19 @@ export function buildLrcFile(project: Project, lyrics: LyricLineData[]) {
     });
 
   return [...tags, '', ...body].join('\n');
+}
+
+// The exported file takes the name of the music file (without its extension) so that players and
+// editors pair song.mp3 with song.lrc. Only characters that file systems reject are removed: the
+// original case and accents are kept. A project without audio falls back to its title.
+export function getLrcFileName(project: { title: string; audioName?: string }) {
+  const source = project.audioName?.trim() ? project.audioName.replace(/\.[^/.]+$/, '') : project.title;
+  const name = source
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^\.+|[. ]+$/g, '');
+  return `${name || 'lyrics'}.lrc`;
 }
 
 export function toFileName(value: string) {

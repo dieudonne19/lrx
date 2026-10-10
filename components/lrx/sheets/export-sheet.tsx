@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/lrx';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { buildLrcFile, toFileName } from '@/lib/lrx-editor-utils';
+import { buildLrcFile, getLrcFileName } from '@/lib/lrx-editor-utils';
 import type { LyricLineData, Project } from '@/lib/lrx-ui-types';
 import * as Clipboard from 'expo-clipboard';
 import { Directory, File, Paths } from 'expo-file-system';
@@ -11,6 +11,9 @@ import { Check, Copy, FileText, Save, Share2, ShieldAlert } from 'lucide-react-n
 import * as React from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { Sheet, SheetHeader } from './sheet';
+
+// .lrc has no registered MIME type; text/plain would add a .txt extension.
+const LRC_MIME_TYPE = 'application/octet-stream';
 
 export function ExportSheet({
   project,
@@ -61,7 +64,8 @@ export function ExportSheet({
 
     try {
       const directory = await Directory.pickDirectoryAsync();
-      const file = directory.createFile(`${toFileName(project.title)}.lrc`, 'text/plain');
+      // text/plain makes Android append .txt to the name; a generic type keeps it as .lrc.
+      const file = directory.createFile(getLrcFileName(project), LRC_MIME_TYPE);
       file.write(lrcText);
       setSaveStatus('done');
     } catch {
@@ -80,14 +84,14 @@ export function ExportSheet({
         return;
       }
 
-      const fileName = `${toFileName(project.title)}.lrc`;
+      const fileName = getLrcFileName(project);
       const file = new File(Paths.cache, fileName);
       file.create({ overwrite: true });
       file.write(lrcText);
 
       await Sharing.shareAsync(file.uri, {
-        mimeType: 'text/plain',
-        UTI: 'public.plain-text',
+        mimeType: LRC_MIME_TYPE,
+        UTI: 'public.data',
         dialogTitle: `Partager ${fileName}`,
       });
       setShareStatus('done');
@@ -133,7 +137,7 @@ export function ExportSheet({
             <Icon as={FileText} className="size-4 text-primary" />
             <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Aperçu</Text>
           </View>
-          <Text className="font-mono text-[11px] text-muted-foreground">{toFileName(project.title)}.lrc</Text>
+          <Text className="font-mono text-[11px] text-muted-foreground">{getLrcFileName(project)}</Text>
         </View>
         {hasLyrics ? (
           <ScrollView className="h-[310px]" contentContainerClassName="px-4 py-3">

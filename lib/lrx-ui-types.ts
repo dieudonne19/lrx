@@ -16,6 +16,7 @@ export type Project = {
   total: number;
   status: 'done' | 'draft' | 'in-progress';
   cover: [string, string];
+  audioName?: string;
   metadata?: LrcMetadata;
 };
 
