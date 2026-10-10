@@ -1,10 +1,12 @@
 import { EmptyState, LrxMark, ProjectCover, Screen, ScreenBody } from '@/components/lrx';
+import { Fade } from '@/components/lrx/fade';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import type { Project, ProjectFilter } from '@/lib/lrx-ui-types';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
-import { ChevronRight, FileText, FolderOpen, MoreHorizontal, Music2, Search, Settings, Upload } from 'lucide-react-native';
+import { ChevronRight, FolderOpen, MoreHorizontal, Plus, Rows3, Search, Settings } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -51,9 +53,9 @@ export function HomeScreen({
           </View>
 
           <ScrollView className="flex-1" contentContainerClassName="pb-28" showsVerticalScrollIndicator={false}>
-            <View className="px-5 pb-5 pt-2">
-              <Text className="text-[34px] font-semibold leading-10 text-foreground">Tes projets</Text>
-              <Text className="mt-2 text-sm leading-5 text-muted-foreground">
+            <View className="px-5 pb-[18px] pt-3.5">
+              <Text className="text-2xl font-semibold leading-7 tracking-[-0.48px] text-foreground">Tes projets</Text>
+              <Text className="mt-1 text-xs leading-4 text-muted-foreground">
                 Reprends une session ou commence une nouvelle synchro.
               </Text>
             </View>
@@ -86,14 +88,19 @@ export function HomeScreen({
             </Text>
           </ScrollView>
 
-          <View className="absolute bottom-5 left-4 right-4 flex-row gap-3">
-            <Button variant="outline" size="lg" onPress={onImportLyrics} className="h-14 flex-1 rounded-2xl bg-background/95">
-              <Icon as={FileText} className="size-5 text-foreground" />
-              <Text>Coller</Text>
+          <Fade direction="up" className="absolute bottom-0 left-0 right-0 h-[110px]" />
+          <View className="absolute bottom-[18px] left-4 right-4 flex-row gap-2.5">
+            <Button variant="outline" size="lg" onPress={onImportLyrics} className="h-14 flex-1 rounded-2xl border-border bg-background">
+              <Icon as={Rows3} className="size-[18px] text-foreground" />
+              <Text>Coller des paroles</Text>
             </Button>
-            <Button size="lg" onPress={onImportAudio} className="h-14 flex-[1.35] rounded-2xl">
-              <Icon as={Upload} className="size-5 text-primary-foreground" />
-              <Text>Import audio</Text>
+            <Button
+              size="lg"
+              onPress={onImportAudio}
+              style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6 }}
+              className="h-14 flex-[1.4] rounded-2xl">
+              <Icon as={Plus} className="size-[18px] text-primary-foreground" />
+              <Text>Nouveau projet</Text>
             </Button>
           </View>
         </ScreenBody>
@@ -106,23 +113,28 @@ function ResumeProject({ project, onOpen }: { project: Project; onOpen: (project
   const progress = Math.round((project.synced / Math.max(1, project.total)) * 100);
 
   return (
-    <View className="px-4 pb-5">
-      <Pressable onPress={() => onOpen(project)} className="flex-row items-center gap-4 rounded-2xl border border-primary/30 bg-primary/10 p-4">
-        <ProjectCover colors={project.cover} size={58} index={0} />
+    <View className="px-4 pb-4">
+      <Pressable
+        onPress={() => onOpen(project)}
+        className="flex-row items-center gap-3.5 overflow-hidden rounded-2xl border border-primary/15 p-4">
+        <LinearGradient
+          colors={['rgba(124, 92, 255, 0.18)', 'rgba(124, 92, 255, 0.04)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+        />
+        <ProjectCover colors={project.cover} size={56} index={0} />
         <View className="min-w-0 flex-1">
-          <View className="mb-1 flex-row items-center gap-1.5">
-            <Icon as={Music2} className="size-3.5 text-primary" />
-            <Text className="text-[11px] font-semibold uppercase tracking-[1.6px] text-primary">
-              Reprendre la session
-            </Text>
-          </View>
+          <Text className="mb-1.5 text-[11px] font-semibold uppercase tracking-[1.3px] text-primary-hi">
+            ▸ Reprendre la session
+          </Text>
           <Text numberOfLines={1} className="text-base font-semibold text-foreground">
             {project.title}
           </Text>
-          <Text className="mt-1 text-xs text-muted-foreground">
+          <Text className="mt-0.5 text-xs text-muted-foreground">
             {project.synced}/{project.total} lignes - {project.updated}
           </Text>
-          <View className="mt-3 h-1 overflow-hidden rounded-full bg-input">
+          <View className="mt-2.5 h-[3px] overflow-hidden rounded-full bg-secondary">
             <View className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
           </View>
         </View>
@@ -160,10 +172,10 @@ function FilterTabs({
           <Pressable
             key={tab.id}
             onPress={() => onChange(tab.id)}
-            className={`flex-row items-center gap-1.5 rounded-full px-3.5 py-2 ${
+            className={`flex-row items-center gap-1.5 rounded-full px-3 py-[7px] ${
               selected ? 'bg-foreground' : 'bg-card'
             }`}>
-            <Text className={`text-xs font-medium ${selected ? 'text-background' : 'text-foreground'}`}>
+            <Text className={`text-xs font-medium ${selected ? 'text-background' : 'text-secondary-foreground'}`}>
               {tab.label}
             </Text>
             <Text className={`text-[11px] ${selected ? 'text-background/60' : 'text-muted-foreground'}`}>
@@ -190,14 +202,18 @@ function ProjectRow({
   const percent = Math.round((project.synced / Math.max(1, project.total)) * 100);
   const statusText = project.status === 'done' ? 'FAIT' : project.status === 'draft' ? 'DRAFT' : `${percent}%`;
   const statusClass =
-    project.status === 'done' ? 'text-chart-2' : project.status === 'draft' ? 'text-muted-foreground' : 'text-foreground';
+    project.status === 'done'
+      ? 'text-chart-2'
+      : project.status === 'draft'
+        ? 'text-subtle'
+        : 'font-mono font-medium text-muted-foreground';
 
   return (
     <Pressable
       onPress={() => onOpen(project)}
       onLongPress={() => onMore(project)}
       className="flex-row items-center gap-3 py-2 pl-5 pr-2">
-      <ProjectCover colors={project.cover} size={50} index={index} status={project.status} />
+      <ProjectCover colors={project.cover} size={48} index={index} status={project.status} />
       <View className="min-w-0 flex-1">
         <Text numberOfLines={1} className="text-[15px] font-medium text-foreground">
           {project.title}
@@ -211,8 +227,8 @@ function ProjectRow({
         </View>
       </View>
       <View className="items-end">
-        <Text className={`text-[11px] font-semibold tracking-[1px] ${statusClass}`}>{statusText}</Text>
-        <Text className="mt-1 text-[10px] text-subtle">{project.updated}</Text>
+        <Text className={`text-[11px] font-semibold tracking-[0.44px] ${statusClass}`}>{statusText}</Text>
+        <Text className="mt-0.5 text-[10.5px] text-subtle">{project.updated}</Text>
       </View>
       <Button
         variant="ghost"
