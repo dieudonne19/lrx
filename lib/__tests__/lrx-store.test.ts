@@ -1,5 +1,5 @@
 import Storage from 'expo-sqlite/kv-store';
-import { formatDuration, getLyricCount, getSyncedCount, useLrxStore } from '../lrx-store';
+import { findProjectByAudio, formatDuration, getLyricCount, getSyncedCount, useLrxStore } from '../lrx-store';
 
 jest.mock('expo-sqlite/kv-store', () => ({
   __esModule: true,
@@ -197,5 +197,38 @@ describe('persistence', () => {
     jest.advanceTimersByTime(500);
     expect(setItem).toHaveBeenCalledTimes(1);
     expect(JSON.parse(setItem.mock.calls[0][1]).state.projects[0].status).toBe('done');
+  });
+});
+
+describe('findProjectByAudio', () => {
+  const withAudio = () =>
+    store().createProject({ title: 'Song', audioName: 'neons.mp3', audioUri: 'file:///a/neons.mp3', audioSize: 4000 });
+
+  it('finds the project that already uses the same file name and size', () => {
+    const project = withAudio();
+    expect(findProjectByAudio(store().projects, { name: 'neons.mp3', size: 4000 })?.id).toBe(project.id);
+  });
+
+  it('does not match another size or another name', () => {
+    withAudio();
+    expect(findProjectByAudio(store().projects, { name: 'neons.mp3', size: 4001 })).toBeUndefined();
+    expect(findProjectByAudio(store().projects, { name: 'other.mp3', size: 4000 })).toBeUndefined();
+  });
+
+  it('never reports a duplicate when the size is unknown', () => {
+    withAudio();
+    expect(findProjectByAudio(store().projects, { name: 'neons.mp3', size: null })).toBeUndefined();
+    expect(findProjectByAudio(store().projects, { name: 'neons.mp3' })).toBeUndefined();
+  });
+
+  it('ignores the project being edited', () => {
+    const project = withAudio();
+    expect(findProjectByAudio(store().projects, { name: 'neons.mp3', size: 4000 }, project.id)).toBeUndefined();
+  });
+
+  it('keeps the size when audio is attached later', () => {
+    const project = store().createProject({ title: 'Lyrics first' });
+    store().attachAudio(project.id, { name: 'late.wav', uri: 'file:///late.wav', size: 10 });
+    expect(findProjectByAudio(store().projects, { name: 'late.wav', size: 10 })?.id).toBe(project.id);
   });
 });

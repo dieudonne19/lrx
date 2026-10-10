@@ -2,7 +2,7 @@ import { HomeScreen } from '@/components/lrx/screens';
 import { AudioPickerSheet, ImportLyricsSheet, MetadataSheet, MoreSheet } from '@/components/lrx/sheets';
 import { confirmDeleteProject } from '@/lib/confirm';
 import { normalizeAudioTitle, projectToViewProject } from '@/lib/lrx-editor-utils';
-import { useLrxStore } from '@/lib/lrx-store';
+import { findProjectByAudio, useLrxStore } from '@/lib/lrx-store';
 import { openEditor } from '@/lib/navigation';
 import type { Project } from '@/lib/lrx-ui-types';
 import { Redirect, router } from 'expo-router';
@@ -74,6 +74,14 @@ export default function HomeRoute() {
       {audioOpen ? (
         <AudioPickerSheet
           onClose={() => setAudioOpen(false)}
+          findDuplicate={(audio) => {
+            const existing = findProjectByAudio(storeProjects, audio);
+            return existing ? { id: existing.id, title: existing.title } : null;
+          }}
+          onOpenExisting={(projectId) => {
+            setAudioOpen(false);
+            openEditor(projectId);
+          }}
           onPicked={(audio) => {
             if (creatingRef.current) return;
             creatingRef.current = true;
@@ -82,6 +90,7 @@ export default function HomeRoute() {
               artist: 'Audio importé',
               audioName: audio.name,
               audioUri: audio.uri,
+              audioSize: audio.size,
               cover: ['#7C5CFF', '#3B2BFF'],
             });
             setAudioOpen(false);

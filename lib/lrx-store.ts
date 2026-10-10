@@ -31,6 +31,7 @@ export type LrxProject = {
   cover: [string, string];
   audioName?: string;
   audioUri?: string;
+  audioSize?: number;
   durationSec?: number;
   metadata: LrxMetadata;
   lyrics: LrxLyricLine[];
@@ -52,6 +53,7 @@ export type CreateProjectInput = {
   duration?: string;
   audioName?: string;
   audioUri?: string;
+  audioSize?: number;
   lyrics?: string[];
   cover?: [string, string];
 };
@@ -73,7 +75,7 @@ type LrxStoreActions = {
   clearTimestamp: (projectId: string, lineId: string) => void;
   restoreLyrics: (projectId: string, lyrics: LrxLyricLine[]) => void;
   saveMetadata: (projectId: string, metadata: LrxMetadata) => void;
-  attachAudio: (projectId: string, audio: { name: string; uri: string }) => void;
+  attachAudio: (projectId: string, audio: { name: string; uri: string; size?: number }) => void;
   setDuration: (projectId: string, seconds: number) => void;
   updateSettings: (settings: Partial<LrxSettings>) => void;
   completeOnboarding: () => void;
@@ -275,6 +277,7 @@ export const useLrxStore = create<LrxStore>()(
             ...project,
             audioName: audio.name,
             audioUri: audio.uri,
+            audioSize: audio.size,
             durationSec: undefined,
             updatedAt: nowIso(),
           })),
@@ -331,6 +334,19 @@ export function formatDuration(totalSeconds: number) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+// Same file name and byte size is a cheap duplicate check (no hashing): a renamed copy is not detected,
+// and a file whose size is unknown is never reported as a duplicate.
+export function findProjectByAudio(
+  projects: LrxProject[],
+  audio: { name: string; size?: number | null },
+  ignoreProjectId?: string
+) {
+  if (audio.size == null) return undefined;
+  return projects.find(
+    (project) => project.id !== ignoreProjectId && project.audioName === audio.name && project.audioSize === audio.size
+  );
+}
+
 export function getSyncedCount(lyrics: LrxLyricLine[]) {
   return lyrics.filter((line) => line.text.trim() && line.t != null).length;
 }
@@ -353,6 +369,7 @@ function createProjectFromInput(input: CreateProjectInput): LrxProject {
     cover: input.cover ?? ['#7C5CFF', '#3B2BFF'],
     audioName: input.audioName,
     audioUri: input.audioUri,
+    audioSize: input.audioSize,
     metadata: {
       title,
       artist,
