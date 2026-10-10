@@ -27,7 +27,7 @@ export function ImportLyricsSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <SheetHeader title="Importer lyrics" subtitle="Colle les paroles brutes, LRX cree une ligne par phrase." onClose={onClose} />
+      <SheetHeader title="Coller les paroles" subtitle="Colle les paroles brutes : LRX crée une ligne par phrase." onClose={onClose} />
 
       <View className="rounded-2xl border border-border bg-card p-3">
         <TextInput
@@ -35,7 +35,7 @@ export function ImportLyricsSheet({
           onChangeText={setRawText}
           multiline
           textAlignVertical="top"
-          placeholder="Colle tes paroles ici..."
+          placeholder="Colle tes paroles ici…"
           placeholderTextColor="#5C6068"
           style={{ fontFamily: resolveFontFamily() }}
           className="min-h-[160px] text-base leading-6 text-foreground"
@@ -54,7 +54,7 @@ export function ImportLyricsSheet({
       </View>
 
       <View className="mt-5">
-        <Text className="mb-2 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">Preview</Text>
+        <Text className="mb-2 text-xs font-semibold uppercase tracking-[1.8px] text-muted-foreground">Aperçu</Text>
         {preview.length ? (
           <View className="gap-2">
             {preview.map((line, index) => (
@@ -70,8 +70,8 @@ export function ImportLyricsSheet({
           <EmptyState
             variant="compact"
             icon={FileText}
-            title="Aucune ligne detectee"
-            body="Colle des paroles avec une phrase par ligne, puis nettoie si necessaire."
+            title="Aucune ligne détectée"
+            body="Colle des paroles avec une phrase par ligne, puis nettoie si nécessaire."
             className="rounded-2xl border border-border bg-card"
           />
         )}
@@ -83,7 +83,7 @@ export function ImportLyricsSheet({
         onPress={() => onCreate(lines)}
         className="mt-6 h-14 rounded-2xl">
         <Icon as={Plus} className="size-5 text-primary-foreground" />
-        <Text>Creer les lignes</Text>
+        <Text>Créer le projet</Text>
       </Button>
     </Sheet>
   );

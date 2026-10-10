@@ -42,7 +42,7 @@ export function AudioPickerSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <SheetHeader title="Importer audio" subtitle="Choisis un fichier audio pour creer une session LRC." onClose={onClose} />
+      <SheetHeader title="Importer audio" subtitle="Choisis un fichier audio pour créer une session LRC." onClose={onClose} />
 
       <Pressable
         onPress={pickAudio}
@@ -51,7 +51,7 @@ export function AudioPickerSheet({
           <Icon as={Upload} className="size-7 text-primary-foreground" />
         </View>
         <Text className="text-base font-semibold text-foreground">
-          {picking ? 'Ouverture...' : 'Choisir un fichier audio'}
+          {picking ? 'Ouverture…' : 'Choisir un fichier audio'}
         </Text>
         <Text className="mt-1 text-center text-sm leading-5 text-muted-foreground">
           MP3, WAV, M4A ou AAC. La lecture reelle sera branchee avec expo-audio ensuite.
@@ -88,9 +88,9 @@ export function AudioPickerSheet({
           <EmptyState
             variant="compact"
             icon={FolderOpen}
-            title="Aucun audio recent"
+            title="Aucun audio récent"
             body="Importe un fichier depuis ton appareil pour commencer une session."
-            cta="Choisir audio"
+            cta="Choisir un audio"
             onCta={pickAudio}
             className="rounded-2xl border border-border bg-card"
           />

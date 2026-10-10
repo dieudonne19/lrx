@@ -40,7 +40,7 @@ export function ExportSheet({
     const missing = total - synced;
     Alert.alert(
       'Export incomplet',
-      `${missing} ligne${missing > 1 ? 's' : ''} sans timestamp seront marquees --:--.--. Exporter quand meme ?`,
+      `${missing} ligne${missing > 1 ? 's' : ''} sans timestamp seront marquées --:--.--. Exporter quand meme ?`,
       [
         { text: 'Annuler', style: 'cancel' },
         { text: 'Exporter', onPress: onConfirm },
@@ -98,7 +98,7 @@ export function ExportSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <SheetHeader title="Export .lrc" subtitle="Preview final avec metadonnees et timestamps synchronises." onClose={onClose} />
+      <SheetHeader title="Exporter en .lrc" subtitle="Aperçu final avec métadonnées et timestamps synchronisés." onClose={onClose} />
 
       {hasUnsyncedLyrics ? (
         <View className="mb-4 flex-row items-center gap-3 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3">
@@ -108,7 +108,7 @@ export function ExportSheet({
           <View className="min-w-0 flex-1">
             <Text className="text-sm font-semibold text-foreground">Export incomplet</Text>
             <Text className="mt-0.5 text-xs leading-4 text-muted-foreground">
-              {total - synced} ligne{total - synced > 1 ? 's' : ''} sans timestamp seront marquees --:--.--.
+              {total - synced} ligne{total - synced > 1 ? 's' : ''} sans timestamp seront marquées --:--.--.
             </Text>
           </View>
         </View>
@@ -119,11 +119,11 @@ export function ExportSheet({
           <Text className="font-mono text-xl font-semibold text-foreground">
             {synced}/{total}
           </Text>
-          <Text className="mt-1 text-xs text-muted-foreground">lignes timees</Text>
+          <Text className="mt-1 text-xs text-muted-foreground">lignes synchronisées</Text>
         </View>
         <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
           <Text className="font-mono text-xl font-semibold text-foreground">{lrcText.split('\n').length}</Text>
-          <Text className="mt-1 text-xs text-muted-foreground">lignes export</Text>
+          <Text className="mt-1 text-xs text-muted-foreground">lignes exportées</Text>
         </View>
       </View>
 
@@ -131,7 +131,7 @@ export function ExportSheet({
         <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
           <View className="flex-row items-center gap-2">
             <Icon as={FileText} className="size-4 text-primary" />
-            <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Preview</Text>
+            <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Aperçu</Text>
           </View>
           <Text className="font-mono text-[11px] text-muted-foreground">{toFileName(project.title)}.lrc</Text>
         </View>
@@ -145,8 +145,8 @@ export function ExportSheet({
           <EmptyState
             variant="compact"
             icon={FileText}
-            title="Aucune lyric a exporter"
-            body="Ajoute ou importe des paroles avant de generer un fichier .lrc."
+            title="Aucune parole à exporter"
+            body="Ajoute ou importe des paroles avant de générer un fichier .lrc."
             className="h-[310px] justify-center"
           />
         )}
@@ -160,7 +160,7 @@ export function ExportSheet({
             disabled={!hasLyrics}
             className="h-14 flex-1 rounded-2xl bg-card">
             <Icon as={copied ? Check : Copy} className="size-5 text-foreground" />
-            <Text>{copied ? 'Copie' : 'Copier'}</Text>
+            <Text>{copied ? 'Copié' : 'Copier'}</Text>
           </Button>
           <Button
             variant="outline"
@@ -168,7 +168,7 @@ export function ExportSheet({
             disabled={!hasLyrics || saveStatus === 'saving'}
             className="h-14 flex-1 rounded-2xl bg-card">
             <Icon as={saveStatus === 'done' ? Check : Save} className="size-5 text-foreground" />
-            <Text>{saveStatus === 'saving' ? 'Enregistrement...' : saveStatus === 'done' ? 'Enregistre' : 'Enregistrer'}</Text>
+            <Text>{saveStatus === 'saving' ? 'Enregistrement…' : saveStatus === 'done' ? 'Enregistré' : 'Enregistrer'}</Text>
           </Button>
         </View>
         <Button
@@ -176,17 +176,17 @@ export function ExportSheet({
           disabled={!hasLyrics || shareStatus === 'sharing'}
           className="h-14 rounded-2xl">
           <Icon as={shareStatus === 'done' ? Check : Share2} className="size-5 text-primary-foreground" />
-          <Text>{shareStatus === 'sharing' ? 'Partage...' : 'Partager'}</Text>
+          <Text>{shareStatus === 'sharing' ? 'Partage…' : 'Partager'}</Text>
         </Button>
       </View>
 
       <Text className="mt-3 text-center text-xs text-muted-foreground">
         {saveStatus === 'error'
-          ? 'Aucun dossier choisi, ou ecriture impossible.'
+          ? 'Aucun dossier choisi, ou écriture impossible.'
           : shareStatus === 'unavailable'
-            ? 'Partage indisponible sur cette plateforme.'
+            ? 'Le partage n’est pas disponible sur cette plateforme.'
             : shareStatus === 'error'
-              ? 'Impossible de creer le fichier pour le moment.'
+              ? 'Impossible de créer le fichier pour le moment.'
               : 'Enregistrer : tu choisis le dossier. Partager : envoie le fichier vers une autre app.'}
       </Text>
     </Sheet>

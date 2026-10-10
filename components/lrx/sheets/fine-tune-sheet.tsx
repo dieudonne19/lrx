@@ -32,11 +32,11 @@ export function FineTuneSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <SheetHeader title="Fine tune" subtitle="Ajuste le timestamp de la ligne active avec precision." onClose={onClose} />
+      <SheetHeader title="Ajuster le timing" subtitle="Règle le timestamp de la ligne active avec précision." onClose={onClose} />
 
       <View className="rounded-2xl border border-border bg-card px-4 py-4">
         <View className="mb-4 flex-row items-center justify-between">
-          <Text className="font-mono text-xs text-muted-foreground">LINE {String(index + 1).padStart(2, '0')}</Text>
+          <Text className="font-mono text-xs text-muted-foreground">LIGNE {String(index + 1).padStart(2, '0')}</Text>
           <Text className="font-mono text-xs text-primary">{line?.t == null ? 'nouveau timestamp' : 'timestamp existant'}</Text>
         </View>
         <Text className="text-xl font-semibold leading-7 text-foreground">{line?.text || 'Aucune ligne active'}</Text>

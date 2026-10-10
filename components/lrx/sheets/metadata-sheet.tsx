@@ -31,20 +31,20 @@ export function MetadataSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <SheetHeader title="Metadata LRC" subtitle="Ces infos seront ajoutees en entete du fichier exporte." onClose={onClose} />
+      <SheetHeader title="Métadonnées" subtitle="Ces infos seront ajoutées en en-tête du fichier exporté." onClose={onClose} />
 
       <View className="gap-3">
-        <MetadataField label="Title" value={metadata.title} onChange={(value) => updateField('title', value)} />
-        <MetadataField label="Artist" value={metadata.artist} onChange={(value) => updateField('artist', value)} />
-        <MetadataField label="Album" value={metadata.album} onChange={(value) => updateField('album', value)} />
-        <MetadataField label="Author" value={metadata.author} onChange={(value) => updateField('author', value)} />
+        <MetadataField label="Titre · ti" value={metadata.title} onChange={(value) => updateField('title', value)} />
+        <MetadataField label="Artiste · ar" value={metadata.artist} onChange={(value) => updateField('artist', value)} />
+        <MetadataField label="Album · al" value={metadata.album} onChange={(value) => updateField('album', value)} />
+        <MetadataField label="Auteur · au" value={metadata.author} onChange={(value) => updateField('author', value)} />
         <MetadataField label="Genre" value={metadata.genre} onChange={(value) => updateField('genre', value)} />
       </View>
 
       <View className="mt-5 rounded-2xl border border-border bg-card px-4 py-3">
         <View className="mb-2 flex-row items-center gap-2">
           <Icon as={Tag} className="size-4 text-primary" />
-          <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Preview tags</Text>
+          <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Aperçu des tags</Text>
         </View>
         <Text className="font-mono text-xs leading-5 text-muted-foreground">[ti:{metadata.title || project.title}]</Text>
         <Text className="font-mono text-xs leading-5 text-muted-foreground">[ar:{metadata.artist || project.artist}]</Text>
@@ -78,8 +78,6 @@ function MetadataField({
       <TextInput
         value={value}
         onChangeText={onChange}
-        placeholder={label}
-        placeholderTextColor="#5C6068"
         style={{ fontFamily: resolveFontFamily() }}
         className="text-base text-foreground"
       />
