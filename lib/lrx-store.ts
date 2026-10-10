@@ -1,4 +1,4 @@
-import { createMMKV } from 'react-native-mmkv';
+import Storage from 'expo-sqlite/kv-store';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 
@@ -76,13 +76,11 @@ export type LrxStore = LrxStoreState & LrxStoreActions;
 
 const STORAGE_VERSION = 1;
 
-const lrxStorage = createMMKV({ id: 'lrx-store' });
-
 const zustandStorage: StateStorage = {
-  getItem: (name) => lrxStorage.getString(name) ?? null,
-  setItem: (name, value) => lrxStorage.set(name, value),
+  getItem: (name) => Storage.getItemSync(name),
+  setItem: (name, value) => Storage.setItemSync(name, value),
   removeItem: (name) => {
-    lrxStorage.remove(name);
+    Storage.removeItemSync(name);
   },
 };
 
