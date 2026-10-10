@@ -16,6 +16,19 @@ export function useEditorAudio(project: LrxProject, defaultSpeed: PlaybackSpeed)
   const [speed, setSpeed] = React.useState<PlaybackSpeed>(defaultSpeed);
 
   const hasAudio = Boolean(project.audioUri);
+
+  React.useEffect(() => {
+    if (!__DEV__) return;
+    console.log('[audio]', {
+      uri: project.audioUri,
+      isLoaded: status.isLoaded,
+      playing: status.playing,
+      duration: status.duration,
+      playbackState: status.playbackState,
+      reason: status.reasonForWaitingToPlay,
+      error: status.error,
+    });
+  }, [project.audioUri, status.isLoaded, status.playing, status.duration, status.playbackState, status.reasonForWaitingToPlay, status.error]);
   const loadedDuration = status.isLoaded && status.duration > 0 ? status.duration : 0;
   const duration = loadedDuration || project.durationSec || 0;
   const time = Math.min(status.currentTime, duration || status.currentTime);
@@ -44,6 +57,7 @@ export function useEditorAudio(project: LrxProject, defaultSpeed: PlaybackSpeed)
 
   const toggle = React.useCallback(() => {
     if (!hasAudio) return;
+    if (__DEV__) console.log('[audio] toggle', { playing: player.playing, isLoaded: player.isLoaded });
     if (player.playing) {
       player.pause();
       return;

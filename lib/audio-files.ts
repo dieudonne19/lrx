@@ -37,5 +37,6 @@ export async function saveAudioFile(source: File) {
   const baseName = toFileName(source.name.replace(/\.[^/.]+$/, ''));
   const target = new File(directory, `${Date.now().toString(36)}-${baseName}${extension ? `.${extension}` : ''}`);
   await source.copy(target);
+  if (!target.exists || !target.size) throw new Error('The audio copy is missing or empty.');
   return target.uri;
 }
