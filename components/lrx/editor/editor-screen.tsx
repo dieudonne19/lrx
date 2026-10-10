@@ -10,6 +10,7 @@ import {
   projectLyricsToEditorLyrics,
   projectToViewProject,
 } from '@/lib/lrx-editor-utils';
+import { tapFeedback } from '@/lib/haptics';
 import { useLrxStore, type LrxProject } from '@/lib/lrx-store';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
 import { Stack } from 'expo-router';
@@ -45,6 +46,7 @@ function EditorSession({
   onBack: () => void;
   onOpenMetadata: () => void;
 }) {
+  const settings = useLrxStore((state) => state.settings);
   const updateStoredTimestamp = useLrxStore((state) => state.updateTimestamp);
   const importStoredLyrics = useLrxStore((state) => state.importLyrics);
   const restoreStoredLyrics = useLrxStore((state) => state.restoreLyrics);
@@ -56,13 +58,15 @@ function EditorSession({
   });
   const [time, setTime] = React.useState(18.6);
   const [playing, setPlaying] = React.useState(false);
-  const [speed, setSpeed] = React.useState<0.5 | 1 | 1.5>(1);
+  const [speed, setSpeed] = React.useState<0.5 | 1 | 1.5>(settings.defaultSpeed);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [karaokeOpen, setKaraokeOpen] = React.useState(false);
   const [importOpen, setImportOpen] = React.useState(false);
   const [fineTuneOpen, setFineTuneOpen] = React.useState(false);
   const [history, setHistory] = React.useState<EditorSnapshot[]>([]);
   const [future, setFuture] = React.useState<EditorSnapshot[]>([]);
+  const scrollRef = React.useRef<ScrollView>(null);
+  const rowOffsets = React.useRef<Record<number, number>>({});
   const duration = 222;
   const synced = lyrics.filter((line) => line.text && line.t != null).length;
   const total = lyrics.filter((line) => line.text).length;
@@ -80,6 +84,13 @@ function EditorSession({
     return () => clearInterval(timer);
   }, [duration, playing, speed]);
 
+  React.useEffect(() => {
+    if (!settings.autoScroll) return;
+    const offset = rowOffsets.current[activeIndex];
+    if (offset == null) return;
+    scrollRef.current?.scrollTo({ y: Math.max(0, offset - 120), animated: true });
+  }, [activeIndex, settings.autoScroll]);
+
   function advance() {
     setActiveIndex((current) => findNextLyric(lyrics, current));
   }
@@ -91,6 +102,7 @@ function EditorSession({
   function tapTime() {
     const activeLine = lyrics[activeIndex];
     if (!activeLine?.text) return;
+    tapFeedback(settings.haptics);
     setHistory((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
     setFuture([]);
     if (activeLine.id) updateStoredTimestamp(project.id, activeLine.id, time);
@@ -228,13 +240,16 @@ function EditorSession({
               onCta={() => setImportOpen(true)}
             />
           ) : null}
-          <ScrollView className="flex-1" contentContainerClassName="pb-40 pt-5" showsVerticalScrollIndicator={false}>
+          <ScrollView ref={scrollRef} className="flex-1" contentContainerClassName="pb-40 pt-5" showsVerticalScrollIndicator={false}>
             {lyrics.map((line, index) => (
               <LyricRow
                 key={`${index}-${line.text}`}
                 line={line}
                 index={index}
                 active={index === activeIndex}
+                onLayout={(event) => {
+                  rowOffsets.current[index] = event.nativeEvent.layout.y;
+                }}
                 past={index < activeIndex && Boolean(line.text)}
                 onPress={() => {
                   if (line.text) setActiveIndex(index);

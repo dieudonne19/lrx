@@ -4,7 +4,7 @@ import { formatTime } from '@/lib/lrx-editor-utils';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
 import { SlidersHorizontal } from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, View } from 'react-native';
+import { LayoutChangeEvent, Pressable, View } from 'react-native';
 
 export function LyricRow({
   line,
@@ -13,6 +13,7 @@ export function LyricRow({
   past,
   onPress,
   onFineTune,
+  onLayout,
 }: {
   line: LyricLineData;
   index: number;
@@ -20,6 +21,7 @@ export function LyricRow({
   past: boolean;
   onPress: () => void;
   onFineTune: () => void;
+  onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const instrumental = !line.text;
   const textClass = active
@@ -32,6 +34,7 @@ export function LyricRow({
   return (
     <Pressable
       onPress={onPress}
+      onLayout={onLayout}
       className={`flex-row items-baseline gap-3 px-5 py-3 ${active ? 'border-l-2 border-primary bg-primary/10 pl-[18px]' : ''}`}>
       <Text className={`w-14 text-right font-mono text-[11px] ${active ? 'text-primary' : 'text-muted-foreground'}`}>
         {timestamp}
