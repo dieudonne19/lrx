@@ -35,11 +35,12 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const isLast = step === SLIDES.length - 1;
 
   function goNext() {
-    if (isLast) {
+    if (step >= SLIDES.length - 1) {
       onComplete();
       return;
     }
-    setStep((current) => Math.min(current + 1, SLIDES.length - 1));
+
+    setStep(step + 1);
   }
 
   function skip() {
@@ -78,10 +79,15 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
                 <Text className="text-muted-foreground">Passer</Text>
               </Button>
               <View className="flex-1" />
-              <Button size="lg" onPress={goNext} className="h-14 min-w-[150px] rounded-2xl">
-                <Text>{isLast ? 'Commencer' : 'Continuer'}</Text>
+              <Pressable
+                onPress={goNext}
+                hitSlop={10}
+                className="h-14 min-w-[150px] flex-row items-center justify-center gap-2 rounded-2xl bg-primary px-6 active:scale-[0.98] active:bg-primary/90">
+                <Text className="text-sm font-medium text-primary-foreground">
+                  {isLast ? 'Commencer' : 'Continuer'}
+                </Text>
                 <Icon as={ChevronRight} className="size-5 text-primary-foreground" />
-              </Button>
+              </Pressable>
             </View>
           </View>
         </ScreenBody>
