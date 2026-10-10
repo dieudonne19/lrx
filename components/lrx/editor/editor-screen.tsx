@@ -2,6 +2,7 @@ import { EmptyState, Screen, ScreenBody } from '@/components/lrx';
 import { Fade } from '@/components/lrx/fade';
 import { AudioPickerSheet, ExportSheet, FineTuneSheet, ImportLyricsSheet } from '@/components/lrx/sheets';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import {
@@ -11,6 +12,7 @@ import {
   projectToViewProject,
 } from '@/lib/lrx-editor-utils';
 import { tapFeedback } from '@/lib/haptics';
+import { useDelayedFlag } from '@/lib/use-delayed-flag';
 import { DEFAULT_TAP_OFFSET_MS, useLrxStore, type LrxProject } from '@/lib/lrx-store';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
 import { Stack } from 'expo-router';
@@ -26,6 +28,7 @@ import { LyricRow } from './lyric-row';
 
 // Without audio the duration is unknown, so timing edits fall back to a one hour bound.
 const FINE_TUNE_FALLBACK_DURATION = 3600;
+const AUDIO_LOAD_TIMEOUT_MS = 10000;
 
 type EditorSnapshot = { lyrics: LyricLineData[]; activeIndex: number };
 
@@ -65,6 +68,9 @@ function EditorSession({
   });
   const audio = useEditorAudio(storedProject, settings.defaultSpeed);
   const { duration, playing, speed } = audio;
+  const showAudioLoading = useDelayedFlag(audio.loading);
+  // A file that never finishes loading would leave the skeleton on screen forever.
+  const audioLoadStuck = useDelayedFlag(audio.loading, AUDIO_LOAD_TIMEOUT_MS);
   const attachStoredAudio = useLrxStore((state) => state.attachAudio);
   const [audioOpen, setAudioOpen] = React.useState(false);
   const [exportOpen, setExportOpen] = React.useState(false);
@@ -99,7 +105,7 @@ function EditorSession({
     // Read the position before anything else so the timestamp does not include the work below.
     const tappedAt = audio.getTime() - (settings.tapOffsetMs ?? DEFAULT_TAP_OFFSET_MS) / 1000;
     const activeLine = lyrics[activeIndex];
-    if (!activeLine?.text || !audio.hasAudio) return;
+    if (!activeLine?.text || !audio.ready) return;
     tapFeedback(settings.haptics);
     setHistory((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
     setFuture([]);
@@ -195,12 +201,14 @@ function EditorSession({
                 cta="Ajouter un audio"
                 onPress={() => setAudioOpen(true)}
               />
-            ) : audio.error ? (
+            ) : audio.error || audioLoadStuck ? (
               <AudioNotice
-                message="Ce fichier audio ne peut pas être lu."
+                message={audio.error ? 'Ce fichier audio ne peut pas être lu.' : 'Le chargement de l’audio prend trop de temps.'}
                 cta="Remplacer"
                 onPress={() => setAudioOpen(true)}
               />
+            ) : showAudioLoading ? (
+              <WaveformSkeleton />
             ) : (
               <EditorWaveform
                 seed={project.id}
@@ -212,7 +220,7 @@ function EditorSession({
             )}
 
             <View className="mt-4 flex-row items-center justify-between">
-              <Button variant="ghost" onPress={audio.cycleSpeed} disabled={!audio.hasAudio} className="h-10 w-16 rounded-xl px-0">
+              <Button variant="ghost" onPress={audio.cycleSpeed} disabled={!audio.ready} className="h-10 w-16 rounded-xl px-0">
                 <Text className="font-mono text-xs">{speed}×</Text>
               </Button>
               <View className="flex-row items-center gap-1">
@@ -220,7 +228,7 @@ function EditorSession({
                   variant="ghost"
                   size="icon"
                   accessibilityLabel="Reculer de 5 secondes"
-                  disabled={!audio.hasAudio}
+                  disabled={!audio.ready}
                   onPress={() => audio.seekBy(-5)}
                   className="rounded-full">
                   <Icon as={Rewind} className="size-5 text-foreground" />
@@ -229,7 +237,7 @@ function EditorSession({
                   variant="outline"
                   size="icon"
                   accessibilityLabel={playing ? 'Pause' : 'Lecture'}
-                  disabled={!audio.hasAudio}
+                  disabled={!audio.ready}
                   onPress={audio.toggle}
                   style={{ shadowColor: '#FFFFFF', shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: 6 } }}
                   className="size-14 rounded-full border-0 bg-foreground">
@@ -239,7 +247,7 @@ function EditorSession({
                   variant="ghost"
                   size="icon"
                   accessibilityLabel="Avancer de 5 secondes"
-                  disabled={!audio.hasAudio}
+                  disabled={!audio.ready}
                   onPress={() => audio.seekBy(5)}
                   className="rounded-full">
                   <Icon as={FastForward} className="size-5 text-foreground" />
@@ -307,7 +315,7 @@ function EditorSession({
                 <Button variant="outline" size="icon" onPress={retreat} className="h-16 w-14 rounded-[18px] border-border bg-secondary">
                   <Icon as={ChevronLeft} className="size-6 text-foreground" />
                 </Button>
-                <TapTimeButton onTap={tapTime} disabled={!audio.hasAudio} playing={playing} />
+                <TapTimeButton onTap={tapTime} disabled={!audio.ready} playing={playing} />
                 <Button variant="outline" size="icon" onPress={advance} className="h-16 w-14 rounded-[18px] border-border bg-secondary">
                   <Icon as={ChevronRight} className="size-6 text-foreground" />
                 </Button>
@@ -380,6 +388,15 @@ function AudioNotice({ message, cta, onPress }: { message: string; cta: string; 
       <Button variant="outline" onPress={onPress} className="h-10 rounded-lg px-3">
         <Text className="text-xs">{cta}</Text>
       </Button>
+    </View>
+  );
+}
+
+function WaveformSkeleton() {
+  return (
+    <View accessibilityLabel="Chargement de l’audio" accessibilityLiveRegion="polite" className="h-[68px] justify-center">
+      <Skeleton className="h-[68px] rounded-xl" />
+      <Text className="absolute self-center text-xs text-muted-foreground">Chargement de l’audio…</Text>
     </View>
   );
 }

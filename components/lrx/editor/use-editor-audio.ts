@@ -85,6 +85,9 @@ export function useEditorAudio(project: LrxProject, defaultSpeed: PlaybackSpeed)
   return {
     player,
     hasAudio,
+    // Playback controls only make sense once the file is loaded and readable.
+    ready: hasAudio && flags.isLoaded && !flags.error,
+    loading: hasAudio && !flags.isLoaded && !flags.error,
     duration,
     playing: flags.playing,
     speed,

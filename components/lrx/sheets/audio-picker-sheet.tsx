@@ -24,7 +24,7 @@ export function AudioPickerSheet({
   findDuplicate?: (audio: { name: string; size?: number | null }) => ExistingProject | null;
   onOpenExisting?: (projectId: string) => void;
 }) {
-  const [picking, setPicking] = React.useState(false);
+  const [phase, setPhase] = React.useState<'idle' | 'picking' | 'copying'>('idle');
   // Synchronous guard: `picking` is only updated after a render, so a double tap could open two pickers.
   const busyRef = React.useRef(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -33,7 +33,7 @@ export function AudioPickerSheet({
   async function pickAudio() {
     if (busyRef.current) return;
     busyRef.current = true;
-    setPicking(true);
+    setPhase('picking');
     setError(null);
     setDuplicate(null);
     try {
@@ -52,12 +52,13 @@ export function AudioPickerSheet({
         return;
       }
 
+      setPhase('copying');
       onPicked({ name: file.name, uri: await saveAudioFile(file), size: file.size ?? undefined });
     } catch {
       setError('Impossible de lire ce fichier. Vérifie qu’il est accessible, puis réessaie.');
     } finally {
       busyRef.current = false;
-      setPicking(false);
+      setPhase('idle');
     }
   }
 
@@ -67,14 +68,14 @@ export function AudioPickerSheet({
 
       <Pressable
         accessibilityRole="button"
-        disabled={picking}
+        disabled={phase !== 'idle'}
         onPress={pickAudio}
         className="items-center justify-center rounded-3xl border border-dashed border-primary/60 bg-primary/10 px-5 py-8">
         <View className="mb-4 size-14 items-center justify-center rounded-2xl bg-primary">
           <Icon as={Upload} className="size-7 text-primary-foreground" />
         </View>
         <Text className="text-base font-semibold text-foreground">
-          {picking ? 'Ouverture…' : 'Choisir un fichier audio'}
+          {phase === 'picking' ? 'Ouverture…' : phase === 'copying' ? 'Copie du fichier…' : 'Choisir un fichier audio'}
         </Text>
         <Text className="mt-1 text-center text-sm leading-5 text-muted-foreground">
           MP3, WAV, M4A, AAC, FLAC ou OGG, 100 Mo maximum.
