@@ -324,7 +324,6 @@ function EditorSession({
       </Screen>
       {importOpen ? (
         <ImportLyricsSheet
-          initialText=""
           onClose={() => setImportOpen(false)}
           onCreate={(lines) => {
             importStoredLyrics(project.id, lines);

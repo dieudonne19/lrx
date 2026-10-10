@@ -3,9 +3,10 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { formatTime } from '@/lib/lrx-editor-utils';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
-import { Minus, Plus, Save, X, type LucideIcon } from 'lucide-react-native';
+import { Minus, Plus, Save, type LucideIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, useWindowDimensions, View } from 'react-native';
+import { Sheet, SheetHeader } from './sheet';
 
 export function FineTuneSheet({
   line,
@@ -30,63 +31,46 @@ export function FineTuneSheet({
   }
 
   return (
-    <View className="absolute inset-0 z-50 justify-end bg-black/60">
-      <Pressable className="absolute inset-0" onPress={onClose} />
-      <View className="rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
-        <View className="mb-5 items-center">
-          <View className="h-1.5 w-12 rounded-full bg-input" />
-        </View>
+    <Sheet onClose={onClose}>
+      <SheetHeader title="Fine tune" subtitle="Ajuste le timestamp de la ligne active avec precision." onClose={onClose} />
 
-        <View className="mb-5 flex-row items-start justify-between gap-4">
-          <View className="flex-1">
-            <Text className="text-2xl font-semibold text-foreground">Fine tune</Text>
-            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
-              Ajuste le timestamp de la ligne active avec precision.
-            </Text>
-          </View>
-          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
-            <Icon as={X} className="size-5 text-foreground" />
-          </Button>
+      <View className="rounded-2xl border border-border bg-card px-4 py-4">
+        <View className="mb-4 flex-row items-center justify-between">
+          <Text className="font-mono text-xs text-muted-foreground">LINE {String(index + 1).padStart(2, '0')}</Text>
+          <Text className="font-mono text-xs text-primary">{line?.t == null ? 'nouveau timestamp' : 'timestamp existant'}</Text>
         </View>
-
-        <View className="rounded-2xl border border-border bg-card px-4 py-4">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="font-mono text-xs text-muted-foreground">LINE {String(index + 1).padStart(2, '0')}</Text>
-            <Text className="font-mono text-xs text-primary">{line?.t == null ? 'nouveau timestamp' : 'timestamp existant'}</Text>
-          </View>
-          <Text className="text-xl font-semibold leading-7 text-foreground">{line?.text || 'Aucune ligne active'}</Text>
-        </View>
-
-        <View className="mt-5 items-center rounded-3xl border border-primary/25 bg-primary/10 px-5 py-6">
-          <Text className="font-mono text-[42px] font-semibold leading-[48px] text-foreground">{formatTime(draftTime)}</Text>
-          <Text className="mt-1 font-mono text-xs text-muted-foreground">
-            {draftTime >= time ? '+' : '-'}
-            {Math.abs(draftTime - time).toFixed(2)}s vs current
-          </Text>
-        </View>
-
-        <View className="mt-5">
-          <FineTuneTrack progress={progress} duration={duration} onChange={setDraftTime} />
-        </View>
-
-        <View className="mt-5 flex-row gap-2">
-          <NudgeButton label="-0.25" icon={Minus} onPress={() => nudge(-0.25)} />
-          <NudgeButton label="-0.05" icon={Minus} onPress={() => nudge(-0.05)} />
-          <NudgeButton label="+0.05" icon={Plus} onPress={() => nudge(0.05)} />
-          <NudgeButton label="+0.25" icon={Plus} onPress={() => nudge(0.25)} />
-        </View>
-
-        <View className="mt-5 flex-row gap-2">
-          <Button variant="outline" onPress={onClose} className="h-14 flex-1 rounded-2xl bg-card">
-            <Text>Annuler</Text>
-          </Button>
-          <Button onPress={() => onSave(draftTime)} disabled={!line?.text} className="h-14 flex-1 rounded-2xl">
-            <Icon as={Save} className="size-5 text-primary-foreground" />
-            <Text>Appliquer</Text>
-          </Button>
-        </View>
+        <Text className="text-xl font-semibold leading-7 text-foreground">{line?.text || 'Aucune ligne active'}</Text>
       </View>
-    </View>
+
+      <View className="mt-5 items-center rounded-3xl border border-primary/25 bg-primary/10 px-5 py-6">
+        <Text className="font-mono text-[42px] font-semibold leading-[48px] text-foreground">{formatTime(draftTime)}</Text>
+        <Text className="mt-1 font-mono text-xs text-muted-foreground">
+          {draftTime >= time ? '+' : '-'}
+          {Math.abs(draftTime - time).toFixed(2)}s vs current
+        </Text>
+      </View>
+
+      <View className="mt-5">
+        <FineTuneTrack progress={progress} duration={duration} onChange={setDraftTime} />
+      </View>
+
+      <View className="mt-5 flex-row gap-2">
+        <NudgeButton label="-0.25" icon={Minus} onPress={() => nudge(-0.25)} />
+        <NudgeButton label="-0.05" icon={Minus} onPress={() => nudge(-0.05)} />
+        <NudgeButton label="+0.05" icon={Plus} onPress={() => nudge(0.05)} />
+        <NudgeButton label="+0.25" icon={Plus} onPress={() => nudge(0.25)} />
+      </View>
+
+      <View className="mt-5 flex-row gap-2">
+        <Button variant="outline" onPress={onClose} className="h-14 flex-1 rounded-2xl bg-card">
+          <Text>Annuler</Text>
+        </Button>
+        <Button onPress={() => onSave(draftTime)} disabled={!line?.text} className="h-14 flex-1 rounded-2xl">
+          <Icon as={Save} className="size-5 text-primary-foreground" />
+          <Text>Appliquer</Text>
+        </Button>
+      </View>
+    </Sheet>
   );
 }
 

@@ -7,9 +7,10 @@ import type { LyricLineData, Project } from '@/lib/lrx-ui-types';
 import * as Clipboard from 'expo-clipboard';
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { Check, Copy, FileText, Save, Share2, ShieldAlert, X } from 'lucide-react-native';
+import { Check, Copy, FileText, Save, Share2, ShieldAlert } from 'lucide-react-native';
 import * as React from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
+import { Sheet, SheetHeader } from './sheet';
 
 export function ExportSheet({
   project,
@@ -96,115 +97,98 @@ export function ExportSheet({
   }
 
   return (
-    <View className="absolute inset-0 z-50 justify-end bg-black/60">
-      <Pressable className="absolute inset-0" onPress={onClose} />
-      <View className="max-h-[88%] rounded-t-[28px] border border-border bg-background px-5 pb-6 pt-3">
-        <View className="mb-5 items-center">
-          <View className="h-1.5 w-12 rounded-full bg-input" />
-        </View>
+    <Sheet onClose={onClose}>
+      <SheetHeader title="Export .lrc" subtitle="Preview final avec metadonnees et timestamps synchronises." onClose={onClose} />
 
-        <View className="mb-5 flex-row items-start justify-between gap-4">
-          <View className="flex-1">
-            <Text className="text-2xl font-semibold text-foreground">Export .lrc</Text>
-            <Text className="mt-1 text-sm leading-5 text-muted-foreground">
-              Preview final avec metadonnees et timestamps synchronises.
+      {hasUnsyncedLyrics ? (
+        <View className="mb-4 flex-row items-center gap-3 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3">
+          <View className="size-10 items-center justify-center rounded-xl bg-primary/20">
+            <Icon as={ShieldAlert} className="size-5 text-primary" />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text className="text-sm font-semibold text-foreground">Export incomplet</Text>
+            <Text className="mt-0.5 text-xs leading-4 text-muted-foreground">
+              {total - synced} ligne{total - synced > 1 ? 's' : ''} sans timestamp seront marquees --:--.--.
             </Text>
           </View>
-          <Button variant="ghost" size="icon" onPress={onClose} className="rounded-full">
-            <Icon as={X} className="size-5 text-foreground" />
-          </Button>
         </View>
+      ) : null}
 
-        {hasUnsyncedLyrics ? (
-          <View className="mb-4 flex-row items-center gap-3 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3">
-            <View className="size-10 items-center justify-center rounded-xl bg-primary/20">
-              <Icon as={ShieldAlert} className="size-5 text-primary" />
-            </View>
-            <View className="min-w-0 flex-1">
-              <Text className="text-sm font-semibold text-foreground">Export incomplet</Text>
-              <Text className="mt-0.5 text-xs leading-4 text-muted-foreground">
-                {total - synced} ligne{total - synced > 1 ? 's' : ''} sans timestamp seront marquees --:--.--.
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        <View className="mb-4 flex-row gap-2">
-          <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
-            <Text className="font-mono text-xl font-semibold text-foreground">
-              {synced}/{total}
-            </Text>
-            <Text className="mt-1 text-xs text-muted-foreground">lignes timees</Text>
-          </View>
-          <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
-            <Text className="font-mono text-xl font-semibold text-foreground">{lrcText.split('\n').length}</Text>
-            <Text className="mt-1 text-xs text-muted-foreground">lignes export</Text>
-          </View>
+      <View className="mb-4 flex-row gap-2">
+        <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
+          <Text className="font-mono text-xl font-semibold text-foreground">
+            {synced}/{total}
+          </Text>
+          <Text className="mt-1 text-xs text-muted-foreground">lignes timees</Text>
         </View>
-
-        <View className="rounded-2xl border border-border bg-card">
-          <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
-            <View className="flex-row items-center gap-2">
-              <Icon as={FileText} className="size-4 text-primary" />
-              <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Preview</Text>
-            </View>
-            <Text className="font-mono text-[11px] text-muted-foreground">{toFileName(project.title)}.lrc</Text>
-          </View>
-          {hasLyrics ? (
-            <ScrollView className="h-[310px]" contentContainerClassName="px-4 py-3">
-              <Text selectable className="font-mono text-xs leading-5 text-foreground">
-                {lrcText}
-              </Text>
-            </ScrollView>
-          ) : (
-            <EmptyState
-              variant="compact"
-              icon={FileText}
-              title="Aucune lyric a exporter"
-              body="Ajoute ou importe des paroles avant de generer un fichier .lrc."
-              className="h-[310px] justify-center"
-            />
-          )}
+        <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-3">
+          <Text className="font-mono text-xl font-semibold text-foreground">{lrcText.split('\n').length}</Text>
+          <Text className="mt-1 text-xs text-muted-foreground">lignes export</Text>
         </View>
-
-        <View className="mt-4 gap-2">
-          <View className="flex-row gap-2">
-            <Button
-              variant="outline"
-              onPress={() => confirmIfUnsynced(copyToClipboard)}
-              disabled={!hasLyrics}
-              className="h-14 flex-1 rounded-2xl bg-card">
-              <Icon as={copied ? Check : Copy} className="size-5 text-foreground" />
-              <Text>{copied ? 'Copie' : 'Copier'}</Text>
-            </Button>
-            <Button
-              variant="outline"
-              onPress={() => confirmIfUnsynced(saveToDevice)}
-              disabled={!hasLyrics || saveStatus === 'saving'}
-              className="h-14 flex-1 rounded-2xl bg-card">
-              <Icon as={saveStatus === 'done' ? Check : Save} className="size-5 text-foreground" />
-              <Text>{saveStatus === 'saving' ? 'Enregistrement...' : saveStatus === 'done' ? 'Enregistre' : 'Enregistrer'}</Text>
-            </Button>
-          </View>
-          <Button
-            onPress={() => confirmIfUnsynced(shareFile)}
-            disabled={!hasLyrics || shareStatus === 'sharing'}
-            className="h-14 rounded-2xl">
-            <Icon as={shareStatus === 'done' ? Check : Share2} className="size-5 text-primary-foreground" />
-            <Text>{shareStatus === 'sharing' ? 'Partage...' : 'Partager'}</Text>
-          </Button>
-        </View>
-
-        <Text className="mt-3 text-center text-xs text-muted-foreground">
-          {saveStatus === 'error'
-            ? 'Aucun dossier choisi, ou ecriture impossible.'
-            : shareStatus === 'unavailable'
-              ? 'Partage indisponible sur cette plateforme.'
-              : shareStatus === 'error'
-                ? 'Impossible de creer le fichier pour le moment.'
-                : 'Enregistrer : tu choisis le dossier. Partager : envoie le fichier vers une autre app.'}
-        </Text>
       </View>
-    </View>
+
+      <View className="rounded-2xl border border-border bg-card">
+        <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
+          <View className="flex-row items-center gap-2">
+            <Icon as={FileText} className="size-4 text-primary" />
+            <Text className="text-xs font-semibold uppercase tracking-[1.8px] text-primary">Preview</Text>
+          </View>
+          <Text className="font-mono text-[11px] text-muted-foreground">{toFileName(project.title)}.lrc</Text>
+        </View>
+        {hasLyrics ? (
+          <ScrollView className="h-[310px]" contentContainerClassName="px-4 py-3">
+            <Text selectable className="font-mono text-xs leading-5 text-foreground">
+              {lrcText}
+            </Text>
+          </ScrollView>
+        ) : (
+          <EmptyState
+            variant="compact"
+            icon={FileText}
+            title="Aucune lyric a exporter"
+            body="Ajoute ou importe des paroles avant de generer un fichier .lrc."
+            className="h-[310px] justify-center"
+          />
+        )}
+      </View>
+
+      <View className="mt-4 gap-2">
+        <View className="flex-row gap-2">
+          <Button
+            variant="outline"
+            onPress={() => confirmIfUnsynced(copyToClipboard)}
+            disabled={!hasLyrics}
+            className="h-14 flex-1 rounded-2xl bg-card">
+            <Icon as={copied ? Check : Copy} className="size-5 text-foreground" />
+            <Text>{copied ? 'Copie' : 'Copier'}</Text>
+          </Button>
+          <Button
+            variant="outline"
+            onPress={() => confirmIfUnsynced(saveToDevice)}
+            disabled={!hasLyrics || saveStatus === 'saving'}
+            className="h-14 flex-1 rounded-2xl bg-card">
+            <Icon as={saveStatus === 'done' ? Check : Save} className="size-5 text-foreground" />
+            <Text>{saveStatus === 'saving' ? 'Enregistrement...' : saveStatus === 'done' ? 'Enregistre' : 'Enregistrer'}</Text>
+          </Button>
+        </View>
+        <Button
+          onPress={() => confirmIfUnsynced(shareFile)}
+          disabled={!hasLyrics || shareStatus === 'sharing'}
+          className="h-14 rounded-2xl">
+          <Icon as={shareStatus === 'done' ? Check : Share2} className="size-5 text-primary-foreground" />
+          <Text>{shareStatus === 'sharing' ? 'Partage...' : 'Partager'}</Text>
+        </Button>
+      </View>
+
+      <Text className="mt-3 text-center text-xs text-muted-foreground">
+        {saveStatus === 'error'
+          ? 'Aucun dossier choisi, ou ecriture impossible.'
+          : shareStatus === 'unavailable'
+            ? 'Partage indisponible sur cette plateforme.'
+            : shareStatus === 'error'
+              ? 'Impossible de creer le fichier pour le moment.'
+              : 'Enregistrer : tu choisis le dossier. Partager : envoie le fichier vers une autre app.'}
+      </Text>
+    </Sheet>
   );
 }
