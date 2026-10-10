@@ -7,16 +7,18 @@ import { FileText, ListChecks, Plus, Sparkles, X } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
+const SAMPLE_LYRICS = 'Sous les neons\nJe cherche encore\nLes rues parlent en silence\nLa nuit garde sa cadence';
+
 export function ImportLyricsSheet({
   onClose,
   onCreate,
+  initialText = SAMPLE_LYRICS,
 }: {
   onClose: () => void;
   onCreate: (lines: string[]) => void;
+  initialText?: string;
 }) {
-  const [rawText, setRawText] = React.useState(
-    'Sous les neons\nJe cherche encore\nLes rues parlent en silence\nLa nuit garde sa cadence'
-  );
+  const [rawText, setRawText] = React.useState(initialText);
   const cleanedText = React.useMemo(() => cleanLyrics(rawText), [rawText]);
   const lines = React.useMemo(() => splitLyrics(cleanedText), [cleanedText]);
   const preview = lines.slice(0, 5);

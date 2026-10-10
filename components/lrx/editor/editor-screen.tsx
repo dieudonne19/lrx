@@ -1,5 +1,5 @@
-import { Screen, ScreenBody } from '@/components/lrx';
-import { ExportSheet, FineTuneSheet } from '@/components/lrx/sheets';
+import { EmptyState, Screen, ScreenBody } from '@/components/lrx';
+import { ExportSheet, FineTuneSheet, ImportLyricsSheet } from '@/components/lrx/sheets';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -13,7 +13,7 @@ import {
 import { useLrxStore, type LrxProject } from '@/lib/lrx-store';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
 import { Stack } from 'expo-router';
-import { ArrowLeft, ChevronLeft, ChevronRight, Eye, FastForward, Maximize2, MoreHorizontal, Pause, Play, Redo2, Rewind, SlidersHorizontal, Undo2 } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Eye, FastForward, FileText, Maximize2, MoreHorizontal, Pause, Play, Redo2, Rewind, SlidersHorizontal, Undo2 } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { EditorWaveform } from './editor-waveform';
@@ -46,6 +46,7 @@ function EditorSession({
   onOpenMetadata: () => void;
 }) {
   const updateStoredTimestamp = useLrxStore((state) => state.updateTimestamp);
+  const importStoredLyrics = useLrxStore((state) => state.importLyrics);
   const restoreStoredLyrics = useLrxStore((state) => state.restoreLyrics);
   const project = React.useMemo(() => projectToViewProject(storedProject), [storedProject]);
   const lyrics = React.useMemo(() => projectLyricsToEditorLyrics(storedProject), [storedProject]);
@@ -58,6 +59,7 @@ function EditorSession({
   const [speed, setSpeed] = React.useState<0.5 | 1 | 1.5>(1);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [karaokeOpen, setKaraokeOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
   const [fineTuneOpen, setFineTuneOpen] = React.useState(false);
   const [history, setHistory] = React.useState<EditorSnapshot[]>([]);
   const [future, setFuture] = React.useState<EditorSnapshot[]>([]);
@@ -217,6 +219,15 @@ function EditorSession({
             </View>
           </View>
 
+          {lyrics.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="Pas encore de paroles"
+              body="Colle les paroles de ce titre pour commencer a poser les timestamps."
+              cta="Importer des paroles"
+              onCta={() => setImportOpen(true)}
+            />
+          ) : null}
           <ScrollView className="flex-1" contentContainerClassName="pb-40 pt-5" showsVerticalScrollIndicator={false}>
             {lyrics.map((line, index) => (
               <LyricRow
@@ -255,6 +266,17 @@ function EditorSession({
           </View>
         </ScreenBody>
       </Screen>
+      {importOpen ? (
+        <ImportLyricsSheet
+          initialText=""
+          onClose={() => setImportOpen(false)}
+          onCreate={(lines) => {
+            importStoredLyrics(project.id, lines);
+            setActiveIndex(0);
+            setImportOpen(false);
+          }}
+        />
+      ) : null}
       {exportOpen ? <ExportSheet project={project} lyrics={lyrics} onClose={() => setExportOpen(false)} /> : null}
       {fineTuneOpen ? (
         <FineTuneSheet
