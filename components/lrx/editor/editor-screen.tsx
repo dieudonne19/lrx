@@ -7,7 +7,6 @@ import { Text } from '@/components/ui/text';
 import {
   findNextLyric,
   findPreviousLyric,
-  formatTime,
   projectLyricsToEditorLyrics,
   projectToViewProject,
 } from '@/lib/lrx-editor-utils';
@@ -21,6 +20,7 @@ import * as React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { EditorWaveform } from './editor-waveform';
 import { KaraokeMode } from './karaoke-mode';
+import { Timecode } from './timecode';
 import { useEditorAudio } from './use-editor-audio';
 import { LyricRow } from './lyric-row';
 
@@ -64,7 +64,7 @@ function EditorSession({
     return next === -1 ? 0 : next;
   });
   const audio = useEditorAudio(storedProject, settings.defaultSpeed);
-  const { time, duration, playing, speed } = audio;
+  const { duration, playing, speed } = audio;
   const attachStoredAudio = useLrxStore((state) => state.attachAudio);
   const [audioOpen, setAudioOpen] = React.useState(false);
   const [exportOpen, setExportOpen] = React.useState(false);
@@ -189,10 +189,7 @@ function EditorSession({
           </View>
 
           <View className="border-b border-border/60 bg-popover/60 px-[18px] pb-3.5 pt-1">
-            <View className="mb-2 flex-row items-end justify-between">
-              <Text className="font-mono text-[22px] font-semibold leading-7 tracking-[-0.44px] text-foreground">{formatTime(time)}</Text>
-              <Text className="font-mono text-xs text-subtle">{formatTime(duration)}</Text>
-            </View>
+            <Timecode player={audio.player} duration={duration} />
             {!audio.hasAudio ? (
               <AudioNotice
                 message="Aucun audio. Ajoute un fichier pour lire et synchroniser."
@@ -208,7 +205,7 @@ function EditorSession({
             ) : (
               <EditorWaveform
                 seed={project.id}
-                progress={duration ? time / duration : 0}
+                player={audio.player}
                 marks={lyrics.map((line) => line.t)}
                 duration={duration}
                 onSeek={audio.seekTo}
@@ -375,7 +372,7 @@ function EditorSession({
         <FineTuneSheet
           line={lyrics[activeIndex]}
           index={activeIndex}
-          time={lyrics[activeIndex]?.t ?? time}
+          time={lyrics[activeIndex]?.t ?? audio.getTime()}
           duration={duration || FINE_TUNE_FALLBACK_DURATION}
           onClose={() => setFineTuneOpen(false)}
           onSave={(nextTime) => {
@@ -388,7 +385,7 @@ function EditorSession({
         <KaraokeMode
           project={project}
           lyrics={lyrics}
-          time={time}
+          player={audio.player}
           duration={duration}
           playing={playing}
           onClose={() => setKaraokeOpen(false)}

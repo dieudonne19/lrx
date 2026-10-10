@@ -6,9 +6,11 @@ import { Text } from '@/components/ui/text';
 import { formatTime } from '@/lib/lrx-editor-utils';
 import type { LyricLineData, Project } from '@/lib/lrx-ui-types';
 import { LinearGradient } from 'expo-linear-gradient';
+import type { AudioPlayer } from 'expo-audio';
 import { ChevronDown, FastForward, Pause, Play, Rewind } from 'lucide-react-native';
 import * as React from 'react';
 import { ScrollView, View } from 'react-native';
+import { usePlaybackTime } from './use-editor-audio';
 
 const ROW_HEIGHT = 56;
 const GLOW = { textShadowColor: 'rgba(124, 92, 255, 0.5)', textShadowRadius: 32, textShadowOffset: { width: 0, height: 0 } };
@@ -25,7 +27,7 @@ function findLineAtTime(lyrics: LyricLineData[], time: number) {
 export function KaraokeMode({
   project,
   lyrics,
-  time,
+  player,
   duration,
   playing,
   onClose,
@@ -34,13 +36,14 @@ export function KaraokeMode({
 }: {
   project: Project;
   lyrics: LyricLineData[];
-  time: number;
+  player: AudioPlayer;
   duration: number;
   playing: boolean;
   onClose: () => void;
   onTogglePlay: () => void;
   onSeekBy: (seconds: number) => void;
 }) {
+  const time = usePlaybackTime(player);
   const scrollRef = React.useRef<ScrollView>(null);
   const [viewportHeight, setViewportHeight] = React.useState(0);
   const activeIndex = React.useMemo(() => findLineAtTime(lyrics, time), [lyrics, time]);

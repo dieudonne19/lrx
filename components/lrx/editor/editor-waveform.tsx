@@ -1,4 +1,6 @@
 import { buildWaveformPath } from '@/lib/lrx-editor-utils';
+import type { AudioPlayer } from 'expo-audio';
+import { usePlaybackTime } from './use-editor-audio';
 import * as React from 'react';
 import { Pressable, useWindowDimensions, View } from 'react-native';
 import Svg, { ClipPath, Defs, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
@@ -33,13 +35,13 @@ const SIDE_PADDING = 36;
 
 export function EditorWaveform({
   seed,
-  progress,
+  player,
   marks,
   duration,
   onSeek,
 }: {
   seed: string;
-  progress: number;
+  player: AudioPlayer;
   marks: (number | undefined)[];
   duration: number;
   onSeek: (time: number) => void;
@@ -50,6 +52,8 @@ export function EditorWaveform({
     () => buildWaveformPath(generateWaveform(220, seedFromId(seed)), width, HEIGHT),
     [seed, width]
   );
+  const time = usePlaybackTime(player);
+  const progress = duration ? time / duration : 0;
   const playheadX = Math.max(0, Math.min(width, progress * width));
 
   return (

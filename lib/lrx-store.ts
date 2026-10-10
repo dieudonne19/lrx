@@ -1,4 +1,5 @@
 import Storage from 'expo-sqlite/kv-store';
+import { AppState } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 
@@ -83,10 +84,31 @@ export type LrxStore = LrxStoreState & LrxStoreActions;
 
 const STORAGE_VERSION = 1;
 
+// Persisting on every change serialized the whole state and wrote it to SQLite synchronously, which blocked
+// the JS thread and delayed TAP TIME. Writes are now batched (at most one every 500 ms) and flushed right
+// away when the app leaves the foreground. A force-kill inside that window can lose the last change.
+const pendingWrites = new Map<string, string>();
+let flushTimer: ReturnType<typeof setTimeout> | undefined;
+
+function flushWrites() {
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = undefined;
+  pendingWrites.forEach((value, key) => Storage.setItemSync(key, value));
+  pendingWrites.clear();
+}
+
+AppState.addEventListener('change', (state) => {
+  if (state !== 'active') flushWrites();
+});
+
 const zustandStorage: StateStorage = {
-  getItem: (name) => Storage.getItemSync(name),
-  setItem: (name, value) => Storage.setItemSync(name, value),
+  getItem: (name) => pendingWrites.get(name) ?? Storage.getItemSync(name),
+  setItem: (name, value) => {
+    pendingWrites.set(name, value);
+    if (!flushTimer) flushTimer = setTimeout(flushWrites, 500);
+  },
   removeItem: (name) => {
+    pendingWrites.delete(name);
     Storage.removeItemSync(name);
   },
 };
