@@ -2,11 +2,13 @@ import { Screen, ScreenBody } from '@/components/lrx';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { cssColor, PRIMARY, PRIMARY_GRADIENT, PRIMARY_HI, primaryAlpha } from '@/lib/brand';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, View } from 'react-native';
+import { useCSSVariable } from 'uniwind';
 import Svg, { Circle, Defs, Line, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 
 const SLIDES = [
@@ -30,7 +32,7 @@ const SLIDES = [
   },
 ] as const;
 
-const GLOW = { textShadowColor: 'rgba(124, 92, 255, 0.5)', textShadowRadius: 20, textShadowOffset: { width: 0, height: 0 } };
+const GLOW = { textShadowColor: primaryAlpha(0.5), textShadowRadius: 20, textShadowOffset: { width: 0, height: 0 } };
 
 export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = React.useState(0);
@@ -78,7 +80,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
             <Pressable
               onPress={goNext}
               hitSlop={10}
-              style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6 }}
+              style={{ shadowColor: PRIMARY, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6 }}
               className="h-12 min-w-[140px] rounded-[10px] active:opacity-90">
               <View className="h-12 flex-row items-center justify-center gap-2 overflow-hidden rounded-[10px] bg-primary px-5">
                 <Text className="text-[15px] font-medium text-white">{isLast ? 'Commencer' : 'Continuer'}</Text>
@@ -109,6 +111,9 @@ function Progress({ step, onSelect }: { step: number; onSelect: (step: number) =
 }
 
 function WaveArt() {
+  const [unplayedToken, playheadToken] = useCSSVariable(['--color-input', '--color-foreground']);
+  const played = cssColor(unplayedToken, '#22252C');
+  const playhead = cssColor(playheadToken, '#F2F3F6');
   const bars = Array.from({ length: 28 }, (_, index) => {
     const height = 30 + Math.abs(Math.sin(index * 0.5) * Math.cos(index * 0.3)) * 110;
     return { x: 6 + index * 9, y: 100 - height / 2, height };
@@ -118,17 +123,17 @@ function WaveArt() {
     <Svg width={260} height={200} viewBox="0 0 260 200">
       <Defs>
         <SvgGradient id="waveFill" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#22252C" />
-          <Stop offset="0.45" stopColor="#22252C" />
-          <Stop offset="0.45" stopColor="#7C5CFF" />
-          <Stop offset="1" stopColor="#9A82FF" />
+          <Stop offset="0" stopColor={played} />
+          <Stop offset="0.45" stopColor={played} />
+          <Stop offset="0.45" stopColor={PRIMARY} />
+          <Stop offset="1" stopColor={PRIMARY_HI} />
         </SvgGradient>
       </Defs>
       {bars.map((bar) => (
         <Rect key={bar.x} x={bar.x} y={bar.y} width={5} height={bar.height} rx={2.5} fill="url(#waveFill)" />
       ))}
-      <Line x1={120} x2={120} y1={20} y2={180} stroke="#FFFFFF" strokeWidth={1} opacity={0.7} />
-      <Circle cx={120} cy={20} r={4} fill="#FFFFFF" />
+      <Line x1={120} x2={120} y1={20} y2={180} stroke={playhead} strokeWidth={1} opacity={0.7} />
+      <Circle cx={120} cy={20} r={4} fill={playhead} />
     </Svg>
   );
 }
@@ -147,10 +152,10 @@ function TapArt() {
 
       <View className="absolute bottom-[-10px] h-[76px] w-[240px] self-center rounded-[18px] border-[1.5px] border-primary opacity-50" />
       <View
-        style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 16 }, elevation: 10 }}
+        style={{ shadowColor: PRIMARY, shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 16 }, elevation: 10 }}
         className="absolute bottom-0 h-14 w-[200px] self-center rounded-2xl">
         <View className="h-14 items-center justify-center overflow-hidden rounded-2xl">
-          <LinearGradient colors={['#9A82FF', '#7C5CFF']} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
+          <LinearGradient colors={PRIMARY_GRADIENT} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
           <Text className="text-[13px] font-semibold uppercase tracking-[2.3px] text-white">Tap Time</Text>
         </View>
       </View>

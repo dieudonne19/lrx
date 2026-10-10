@@ -1,8 +1,10 @@
 import { buildWaveformPath } from '@/lib/lrx-editor-utils';
+import { cssColor, PRIMARY, PRIMARY_HI } from '@/lib/brand';
 import type { AudioPlayer } from 'expo-audio';
 import { usePlaybackTime } from './use-editor-audio';
 import * as React from 'react';
 import { Pressable, useWindowDimensions, View } from 'react-native';
+import { useCSSVariable } from 'uniwind';
 import Svg, { ClipPath, Defs, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 // Pseudo waveform from the mockup: a slow envelope, a faster ripple and a little deterministic noise.
@@ -52,6 +54,12 @@ export function EditorWaveform({
     () => buildWaveformPath(generateWaveform(220, seedFromId(seed)), width, HEIGHT),
     [seed, width]
   );
+  const tokens = useCSSVariable(['--color-faint', '--color-input', '--color-border', '--color-primary-hi', '--color-foreground']);
+  const futureTop = cssColor(tokens[0], '#3A3D44');
+  const futureBottom = cssColor(tokens[1], '#22252C');
+  const centerLine = cssColor(tokens[2], '#1E2026');
+  const markColor = cssColor(tokens[3], PRIMARY_HI);
+  const playhead = cssColor(tokens[4], '#F2F3F6');
   const time = usePlaybackTime(player);
   const progress = duration ? time / duration : 0;
   const playheadX = Math.max(0, Math.min(width, progress * width));
@@ -68,12 +76,12 @@ export function EditorWaveform({
       <Svg width="100%" height={HEIGHT} viewBox={`0 0 ${width} ${HEIGHT}`}>
         <Defs>
           <LinearGradient id="editorPast" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#7C5CFF" stopOpacity={0.95} />
-            <Stop offset="1" stopColor="#7C5CFF" stopOpacity={0.7} />
+            <Stop offset="0" stopColor={PRIMARY} stopOpacity={0.95} />
+            <Stop offset="1" stopColor={PRIMARY} stopOpacity={0.7} />
           </LinearGradient>
           <LinearGradient id="editorFuture" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#3A3D44" stopOpacity={0.95} />
-            <Stop offset="1" stopColor="#22252C" stopOpacity={0.85} />
+            <Stop offset="0" stopColor={futureTop} stopOpacity={0.95} />
+            <Stop offset="1" stopColor={futureBottom} stopOpacity={0.85} />
           </LinearGradient>
           <ClipPath id="pastClip">
             <Rect x={0} y={0} width={playheadX} height={HEIGHT} />
@@ -82,7 +90,7 @@ export function EditorWaveform({
             <Rect x={playheadX} y={0} width={width - playheadX} height={HEIGHT} />
           </ClipPath>
         </Defs>
-        <Line x1={0} x2={width} y1={HEIGHT / 2} y2={HEIGHT / 2} stroke="#1E2026" strokeWidth={1} />
+        <Line x1={0} x2={width} y1={HEIGHT / 2} y2={HEIGHT / 2} stroke={centerLine} strokeWidth={1} />
         <G clipPath="url(#futureClip)">
           <Path d={path} fill="url(#editorFuture)" />
         </G>
@@ -97,14 +105,14 @@ export function EditorWaveform({
               x2={(mark / duration) * width}
               y1={2}
               y2={HEIGHT - 2}
-              stroke="#9A82FF"
+              stroke={markColor}
               strokeWidth={1}
               strokeDasharray="3 3"
               opacity={0.5}
             />
           )
         )}
-        <Line x1={playheadX} x2={playheadX} y1={0} y2={HEIGHT} stroke="#FFFFFF" strokeWidth={1.5} />
+        <Line x1={playheadX} x2={playheadX} y1={0} y2={HEIGHT} stroke={playhead} strokeWidth={1.5} />
       </Svg>
       <View
         pointerEvents="none"
@@ -115,8 +123,8 @@ export function EditorWaveform({
           width: 10,
           height: 10,
           borderRadius: 5,
-          backgroundColor: '#FFFFFF',
-          shadowColor: '#FFFFFF',
+          backgroundColor: playhead,
+          shadowColor: playhead,
           shadowOpacity: 0.6,
           shadowRadius: 6,
           shadowOffset: { width: 0, height: 0 },

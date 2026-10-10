@@ -1,3 +1,4 @@
+import { cssColor } from '@/lib/brand';
 import { resolveFontFamily } from '@/lib/fonts';
 import { EmptyState } from '@/components/lrx';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { cleanLyrics, splitLyrics } from '@/lib/lrx-editor-utils';
 import { FileText, ListChecks, Plus, Sparkles } from 'lucide-react-native';
 import * as React from 'react';
 import { TextInput, View } from 'react-native';
+import { useCSSVariable } from 'uniwind';
 import { Sheet, SheetHeader } from './sheet';
 
 export function ImportLyricsSheet({
@@ -16,6 +18,7 @@ export function ImportLyricsSheet({
   onClose: () => void;
   onCreate: (lines: string[]) => void;
 }) {
+  const placeholder = useCSSVariable('--color-subtle');
   const [rawText, setRawText] = React.useState('');
   const cleanedText = React.useMemo(() => cleanLyrics(rawText), [rawText]);
   const lines = React.useMemo(() => splitLyrics(cleanedText), [cleanedText]);
@@ -36,7 +39,7 @@ export function ImportLyricsSheet({
           multiline
           textAlignVertical="top"
           placeholder="Colle tes paroles ici…"
-          placeholderTextColor="#5C6068"
+          placeholderTextColor={cssColor(placeholder, '#5C6068')}
           style={{ fontFamily: resolveFontFamily() }}
           className="min-h-[160px] text-base leading-6 text-foreground"
         />
