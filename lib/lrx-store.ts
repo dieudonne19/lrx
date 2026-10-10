@@ -41,6 +41,8 @@ export type LrxSettings = {
   haptics: boolean;
   autoScroll: boolean;
   confirmUnsyncedExport: boolean;
+  // Milliseconds removed from a TAP TIME timestamp to compensate reaction time and audio output latency.
+  tapOffsetMs: number;
 };
 
 export type CreateProjectInput = {
@@ -89,12 +91,15 @@ const zustandStorage: StateStorage = {
   },
 };
 
+export const DEFAULT_TAP_OFFSET_MS = 80;
+
 export const DEFAULT_LRX_SETTINGS: LrxSettings = {
   theme: 'dark',
   defaultSpeed: 1,
   haptics: true,
   autoScroll: true,
   confirmUnsyncedExport: true,
+  tapOffsetMs: DEFAULT_TAP_OFFSET_MS,
 };
 
 const SEED_PROJECTS: LrxProject[] = [

@@ -2,11 +2,15 @@ import { Screen, ScreenBody } from '@/components/lrx';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { DEFAULT_TAP_OFFSET_MS } from '@/lib/lrx-store';
 import type { DefaultSpeed, SettingsPreferences, ThemePreference } from '@/lib/lrx-ui-types';
 import { Stack } from 'expo-router';
 import {
   ArrowLeft,
   Gauge,
+  Minus,
+  Plus,
+  Timer,
   Moon,
   ScrollText,
   ShieldAlert,
@@ -15,6 +19,7 @@ import {
   Vibrate,
   type LucideIcon,
 } from 'lucide-react-native';
+import type * as React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 const THEMES: { id: ThemePreference; label: string; icon: LucideIcon }[] = [
@@ -24,6 +29,8 @@ const THEMES: { id: ThemePreference; label: string; icon: LucideIcon }[] = [
 ];
 
 const SPEEDS: DefaultSpeed[] = [0.5, 1, 1.5];
+const OFFSET_STEP_MS = 10;
+const MAX_OFFSET_MS = 300;
 
 export function SettingsScreen({
   preferences,
@@ -81,6 +88,22 @@ export function SettingsScreen({
               description="Garde la ligne active visible."
               toggle={{ value: preferences.autoScroll, onChange: (autoScroll) => update({ autoScroll }) }}
             />
+            <SettingsRow
+              icon={Timer}
+              label="Décalage TAP TIME"
+              description="Retiré du timestamp pour compenser ta réaction et la latence audio."
+              trailing={
+                <Stepper
+                  label="Décalage TAP TIME"
+                  value={preferences.tapOffsetMs ?? DEFAULT_TAP_OFFSET_MS}
+                  unit="ms"
+                  step={OFFSET_STEP_MS}
+                  min={0}
+                  max={MAX_OFFSET_MS}
+                  onChange={(tapOffsetMs) => update({ tapOffsetMs })}
+                />
+              }
+            />
             <SettingsRow icon={Gauge} label="Vitesse par défaut" description="Appliquée à l’ouverture de l’éditeur." />
             <Segmented
               label="Vitesse par défaut"
@@ -122,11 +145,13 @@ function SettingsRow({
   label,
   description,
   toggle,
+  trailing,
 }: {
   icon: LucideIcon;
   label: string;
   description?: string;
   toggle?: { value: boolean; onChange: (value: boolean) => void };
+  trailing?: React.ReactNode;
 }) {
   const content = (
     <>
@@ -138,6 +163,7 @@ function SettingsRow({
         {description ? <Text className="mt-0.5 text-xs leading-4 text-muted-foreground">{description}</Text> : null}
       </View>
       {toggle ? <Switch value={toggle.value} /> : null}
+      {trailing}
     </>
   );
 
@@ -197,6 +223,50 @@ function Segmented<T extends string | number>({
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+function Stepper({
+  label,
+  value,
+  unit,
+  step,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  unit: string;
+  step: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <View className="flex-row items-center">
+      <Button
+        variant="ghost"
+        size="icon"
+        accessibilityLabel={`Diminuer : ${label}`}
+        disabled={value <= min}
+        onPress={() => onChange(Math.max(min, value - step))}
+        className="size-11 rounded-full">
+        <Icon as={Minus} className="size-4 text-foreground" />
+      </Button>
+      <Text accessibilityLiveRegion="polite" className="w-14 text-center font-mono text-[13px] font-medium text-foreground">
+        {value} {unit}
+      </Text>
+      <Button
+        variant="ghost"
+        size="icon"
+        accessibilityLabel={`Augmenter : ${label}`}
+        disabled={value >= max}
+        onPress={() => onChange(Math.min(max, value + step))}
+        className="size-11 rounded-full">
+        <Icon as={Plus} className="size-4 text-foreground" />
+      </Button>
     </View>
   );
 }

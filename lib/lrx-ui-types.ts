@@ -35,4 +35,5 @@ export type SettingsPreferences = {
   haptics: boolean;
   autoScroll: boolean;
   confirmUnsyncedExport: boolean;
+  tapOffsetMs: number;
 };

@@ -12,7 +12,7 @@ import {
   projectToViewProject,
 } from '@/lib/lrx-editor-utils';
 import { tapFeedback } from '@/lib/haptics';
-import { useLrxStore, type LrxProject } from '@/lib/lrx-store';
+import { DEFAULT_TAP_OFFSET_MS, useLrxStore, type LrxProject } from '@/lib/lrx-store';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
@@ -71,6 +71,7 @@ function EditorSession({
   const [karaokeOpen, setKaraokeOpen] = React.useState(false);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
   const editingRef = React.useRef<number | null>(null);
+  const touchHandledRef = React.useRef(false);
   const [importOpen, setImportOpen] = React.useState(false);
   const [fineTuneOpen, setFineTuneOpen] = React.useState(false);
   const [history, setHistory] = React.useState<EditorSnapshot[]>([]);
@@ -96,12 +97,14 @@ function EditorSession({
   }
 
   function tapTime() {
+    // Read the position before anything else so the timestamp does not include the work below.
+    const tappedAt = audio.getTime() - (settings.tapOffsetMs ?? DEFAULT_TAP_OFFSET_MS) / 1000;
     const activeLine = lyrics[activeIndex];
     if (!activeLine?.text || !audio.hasAudio) return;
     tapFeedback(settings.haptics);
     setHistory((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
     setFuture([]);
-    if (activeLine.id) updateStoredTimestamp(project.id, activeLine.id, audio.getTime());
+    if (activeLine.id) updateStoredTimestamp(project.id, activeLine.id, Math.max(0, tappedAt));
     setActiveIndex((current) => findNextLyric(lyrics, current));
   }
 
@@ -309,7 +312,16 @@ function EditorSession({
                   <Icon as={ChevronLeft} className="size-6 text-foreground" />
                 </Button>
                 <Pressable
-                  onPress={tapTime}
+                  // Fire on touch down: onPress waits for the finger to lift, adding the press duration to the delay.
+                  onPressIn={() => {
+                    touchHandledRef.current = true;
+                    tapTime();
+                  }}
+                  // Screen readers activate with onPress only, so keep it as the non-touch path.
+                  onPress={() => {
+                    if (touchHandledRef.current) touchHandledRef.current = false;
+                    else tapTime();
+                  }}
                   accessibilityLabel="Tap time"
                   disabled={!audio.hasAudio}
                   style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.45, shadowRadius: 20, shadowOffset: { width: 0, height: 14 }, elevation: 10 }}
