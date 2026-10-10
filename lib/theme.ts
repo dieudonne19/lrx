@@ -1,60 +1,26 @@
 import { DarkTheme, DefaultTheme, type Theme } from 'expo-router/react-navigation';
  
+// The colors React Navigation needs. global.css is the source of truth for the UI; theme.test.ts fails when
+// these drift from it.
 export const THEME = {
   light: {
     background: '#F7F8FB',
     foreground: '#111217',
     card: '#FFFFFF',
-    cardForeground: '#111217',
-    popover: '#FFFFFF',
-    popoverForeground: '#111217',
     primary: '#7C5CFF',
-    primaryForeground: '#FFFFFF',
-    secondary: '#ECEEF4',
-    secondaryForeground: '#22252C',
-    muted: '#ECEEF4',
-    mutedForeground: '#68707D',
-    accent: '#7C5CFF',
-    accentForeground: '#FFFFFF',
     destructive: '#F5536D',
     border: '#DDE1EA',
-    input: '#DDE1EA',
-    ring: '#9A82FF',
-    radius: '0.625rem',
-    chart1: '#7C5CFF',
-    chart2: '#3FD17A',
-    chart3: '#F5B547',
-    chart4: '#F5536D',
-    chart5: '#5B3EE8',
   },
   dark: {
     background: '#08090B',
     foreground: '#F2F3F6',
     card: '#131418',
-    cardForeground: '#F2F3F6',
-    popover: '#0E0F12',
-    popoverForeground: '#F2F3F6',
     primary: '#7C5CFF',
-    primaryForeground: '#FFFFFF',
-    secondary: '#1A1C21',
-    secondaryForeground: '#C5C8CF',
-    muted: '#1A1C21',
-    mutedForeground: '#8A8F99',
-    accent: '#7C5CFF',
-    accentForeground: '#FFFFFF',
     destructive: '#F5536D',
     border: '#1E2026',
-    input: '#22252C',
-    ring: '#9A82FF',
-    radius: '0.625rem',
-    chart1: '#7C5CFF',
-    chart2: '#3FD17A',
-    chart3: '#F5B547',
-    chart4: '#F5536D',
-    chart5: '#5B3EE8',
   },
 };
- 
+
 export const NAV_THEME: Record<'light' | 'dark', Theme> = {
   light: {
     ...DefaultTheme,
