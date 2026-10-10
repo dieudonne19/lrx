@@ -6,6 +6,7 @@ import type { LyricLineData } from '@/lib/lrx-ui-types';
 import { SlidersHorizontal } from 'lucide-react-native';
 import * as React from 'react';
 import { LayoutChangeEvent, Pressable, TextInput, View } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 
 // Active line treatment from the mockup (highlight style "glow").
 const GLOW = { textShadowColor: 'rgba(124, 92, 255, 0.45)', textShadowRadius: 24, textShadowOffset: { width: 0, height: 0 } };
@@ -35,6 +36,20 @@ export function LyricRow({
 }) {
   const instrumental = !line.text;
   const [draft, setDraft] = React.useState(line.text);
+  const reduceMotion = useReducedMotion();
+  const flash = useSharedValue(0);
+  const seenTimestamp = React.useRef(line.t);
+
+  // Confirm a new timestamp with a short glow on the row (not when the screen first renders it).
+  React.useEffect(() => {
+    if (seenTimestamp.current === line.t) return;
+    seenTimestamp.current = line.t;
+    if (line.t == null || reduceMotion) return;
+    flash.value = 0.3;
+    flash.value = withTiming(0, { duration: 500 });
+  }, [flash, line.t, reduceMotion]);
+
+  const flashStyle = useAnimatedStyle(() => ({ opacity: flash.value }));
 
   React.useEffect(() => {
     if (editing) setDraft(line.text);
@@ -52,6 +67,7 @@ export function LyricRow({
       onLongPress={onEdit}
       onLayout={onLayout}
       className="flex-row items-baseline gap-3 px-[22px] py-3.5">
+      <Animated.View pointerEvents="none" style={flashStyle} className="absolute inset-x-3 inset-y-1 rounded-lg bg-primary" />
       <Text
         className={`w-14 text-right font-mono text-[11px] font-medium ${
           active ? 'text-primary-hi' : past ? 'text-muted-foreground' : 'text-subtle'

@@ -13,13 +13,13 @@ import {
 import { tapFeedback } from '@/lib/haptics';
 import { DEFAULT_TAP_OFFSET_MS, useLrxStore, type LrxProject } from '@/lib/lrx-store';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
 import { ArrowLeft, ChevronLeft, ChevronRight, Eye, FastForward, Maximize2, MoreHorizontal, Pause, Play, Redo2, Rewind, SlidersHorizontal, Undo2 } from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { EditorWaveform } from './editor-waveform';
 import { KaraokeMode } from './karaoke-mode';
+import { TapTimeButton } from './tap-time-button';
 import { Timecode } from './timecode';
 import { useEditorAudio } from './use-editor-audio';
 import { LyricRow } from './lyric-row';
@@ -71,7 +71,6 @@ function EditorSession({
   const [karaokeOpen, setKaraokeOpen] = React.useState(false);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
   const editingRef = React.useRef<number | null>(null);
-  const touchHandledRef = React.useRef(false);
   const [importOpen, setImportOpen] = React.useState(false);
   const [fineTuneOpen, setFineTuneOpen] = React.useState(false);
   const [history, setHistory] = React.useState<EditorSnapshot[]>([]);
@@ -308,30 +307,7 @@ function EditorSession({
                 <Button variant="outline" size="icon" onPress={retreat} className="h-16 w-14 rounded-[18px] border-border bg-secondary">
                   <Icon as={ChevronLeft} className="size-6 text-foreground" />
                 </Button>
-                <Pressable
-                  // Fire on touch down: onPress waits for the finger to lift, adding the press duration to the delay.
-                  onPressIn={() => {
-                    touchHandledRef.current = true;
-                    tapTime();
-                  }}
-                  // Screen readers activate with onPress only, so keep it as the non-touch path.
-                  onPress={() => {
-                    if (touchHandledRef.current) touchHandledRef.current = false;
-                    else tapTime();
-                  }}
-                  accessibilityLabel="Tap time"
-                  disabled={!audio.hasAudio}
-                  style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.45, shadowRadius: 20, shadowOffset: { width: 0, height: 14 }, elevation: 10 }}
-                  className={`h-16 flex-1 rounded-[18px] ${audio.hasAudio ? '' : 'opacity-40'}`}>
-                  <View className="h-16 flex-row items-center justify-center gap-3 overflow-hidden rounded-[18px] px-[18px]">
-                    <LinearGradient colors={['#9A82FF', '#7C5CFF']} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
-                    <View
-                      style={{ shadowColor: '#FFFFFF', shadowOpacity: 0.8, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } }}
-                      className={`size-2 rounded-full bg-white ${playing ? 'opacity-100' : 'opacity-60'}`}
-                    />
-                    <Text className="text-[15px] font-bold uppercase tracking-[3.3px] text-white">Tap Time</Text>
-                  </View>
-                </Pressable>
+                <TapTimeButton onTap={tapTime} disabled={!audio.hasAudio} playing={playing} />
                 <Button variant="outline" size="icon" onPress={advance} className="h-16 w-14 rounded-[18px] border-border bg-secondary">
                   <Icon as={ChevronRight} className="size-6 text-foreground" />
                 </Button>
