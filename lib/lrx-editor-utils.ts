@@ -142,10 +142,12 @@ export function toFileName(value: string) {
   );
 }
 
+// Round to centiseconds first: truncating a float such as 75.05 % 1 (0.0499...) would print .04.
 export function formatTime(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.floor(totalSeconds % 60);
-  const centiseconds = Math.floor((totalSeconds % 1) * 100);
+  const total = Math.max(0, Math.round(totalSeconds * 100));
+  const minutes = Math.floor(total / 6000);
+  const seconds = Math.floor((total % 6000) / 100);
+  const centiseconds = total % 100;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
 }
 
