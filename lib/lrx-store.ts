@@ -54,6 +54,7 @@ type LrxStoreState = {
   projects: LrxProject[];
   activeProjectId: string | null;
   settings: LrxSettings;
+  hasOnboarded: boolean;
 };
 
 type LrxStoreActions = {
@@ -67,6 +68,7 @@ type LrxStoreActions = {
   restoreLyrics: (projectId: string, lyrics: LrxLyricLine[]) => void;
   saveMetadata: (projectId: string, metadata: LrxMetadata) => void;
   updateSettings: (settings: Partial<LrxSettings>) => void;
+  completeOnboarding: () => void;
   resetToSeed: () => void;
 };
 
@@ -130,6 +132,7 @@ export const useLrxStore = create<LrxStore>()(
       projects: SEED_PROJECTS,
       activeProjectId: SEED_PROJECTS[0]?.id ?? null,
       settings: DEFAULT_LRX_SETTINGS,
+      hasOnboarded: false,
 
       createProject: (input) => {
         const project = createProjectFromInput(input);
@@ -240,6 +243,10 @@ export const useLrxStore = create<LrxStore>()(
         set((state) => ({ settings: { ...state.settings, ...settings } }));
       },
 
+      completeOnboarding: () => {
+        set({ hasOnboarded: true });
+      },
+
       resetToSeed: () => {
         set({
           projects: SEED_PROJECTS,
@@ -256,6 +263,7 @@ export const useLrxStore = create<LrxStore>()(
         projects: state.projects,
         activeProjectId: state.activeProjectId,
         settings: state.settings,
+        hasOnboarded: state.hasOnboarded,
       }),
     }
   )

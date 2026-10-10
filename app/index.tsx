@@ -4,7 +4,7 @@ import { normalizeAudioTitle, projectToViewProject } from '@/lib/lrx-editor-util
 import { useLrxStore } from '@/lib/lrx-store';
 import { openEditor } from '@/lib/navigation';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import * as React from 'react';
 
 const INITIAL_LYRICS: LyricLineData[] = [
@@ -24,9 +24,12 @@ const INITIAL_LYRICS: LyricLineData[] = [
 export default function HomeRoute() {
   const storeProjects = useLrxStore((state) => state.projects);
   const createStoredProject = useLrxStore((state) => state.createProject);
+  const hasOnboarded = useLrxStore((state) => state.hasOnboarded);
   const [importOpen, setImportOpen] = React.useState(false);
   const [audioOpen, setAudioOpen] = React.useState(false);
   const homeProjects = React.useMemo(() => storeProjects.map(projectToViewProject), [storeProjects]);
+
+  if (!hasOnboarded) return <Redirect href="/onboarding" />;
 
   return (
     <>
