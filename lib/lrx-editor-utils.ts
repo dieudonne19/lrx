@@ -7,13 +7,13 @@ export function buildWaveformPath(data: number[], width: number, height: number)
 
   data.forEach((value, index) => {
     const x = (index / (data.length - 1)) * width;
-    const amp = value * (height * 0.42);
+    const amp = value * (height * 0.46);
     path += ` L ${x.toFixed(2)} ${(mid - amp).toFixed(2)}`;
   });
 
   for (let index = data.length - 1; index >= 0; index -= 1) {
     const x = (index / (data.length - 1)) * width;
-    const amp = data[index] * (height * 0.42);
+    const amp = data[index] * (height * 0.46);
     path += ` L ${x.toFixed(2)} ${(mid + amp).toFixed(2)}`;
   }
 
