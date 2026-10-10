@@ -18,9 +18,13 @@ export function AudioPickerSheet({
   onPicked: (audio: PickedAudio) => void;
 }) {
   const [picking, setPicking] = React.useState(false);
+  // Synchronous guard: `picking` is only updated after a render, so a double tap could open two pickers.
+  const busyRef = React.useRef(false);
   const [error, setError] = React.useState<string | null>(null);
 
   async function pickAudio() {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setPicking(true);
     setError(null);
     try {
@@ -37,6 +41,7 @@ export function AudioPickerSheet({
     } catch {
       setError('Impossible de lire ce fichier. Vérifie qu’il est accessible, puis réessaie.');
     } finally {
+      busyRef.current = false;
       setPicking(false);
     }
   }

@@ -14,6 +14,8 @@ export default function HomeRoute() {
   const createStoredProject = useLrxStore((state) => state.createProject);
   const deleteStoredProject = useLrxStore((state) => state.deleteProject);
   const saveStoredMetadata = useLrxStore((state) => state.saveMetadata);
+  // A fast double tap fires the create handler twice before the sheet unmounts; React state is too slow to stop it.
+  const creatingRef = React.useRef(false);
   const [actionProject, setActionProject] = React.useState<Project | null>(null);
   const [renameProject, setRenameProject] = React.useState<Project | null>(null);
   const hasOnboarded = useLrxStore((state) => state.hasOnboarded);
@@ -28,8 +30,14 @@ export default function HomeRoute() {
       <HomeScreen
         projects={homeProjects}
         onOpen={(project) => openEditor(project.id)}
-        onImportLyrics={() => setImportOpen(true)}
-        onImportAudio={() => setAudioOpen(true)}
+        onImportLyrics={() => {
+          creatingRef.current = false;
+          setImportOpen(true);
+        }}
+        onImportAudio={() => {
+          creatingRef.current = false;
+          setAudioOpen(true);
+        }}
         onOpenSettings={() => router.push('/settings')}
         onMore={setActionProject}
       />
@@ -67,6 +75,8 @@ export default function HomeRoute() {
         <AudioPickerSheet
           onClose={() => setAudioOpen(false)}
           onPicked={(audio) => {
+            if (creatingRef.current) return;
+            creatingRef.current = true;
             const project = createStoredProject({
               title: normalizeAudioTitle(audio.name),
               artist: 'Audio importé',
@@ -83,6 +93,8 @@ export default function HomeRoute() {
         <ImportLyricsSheet
           onClose={() => setImportOpen(false)}
           onCreate={(lines) => {
+            if (creatingRef.current) return;
+            creatingRef.current = true;
             const project = createStoredProject({
               title: 'Nouveau lyrics',
               artist: 'Import manuel',
