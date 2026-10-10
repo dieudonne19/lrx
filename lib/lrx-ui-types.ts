@@ -36,5 +36,3 @@ export type SettingsPreferences = {
   autoScroll: boolean;
   confirmUnsyncedExport: boolean;
 };
-
-export type AppView = 'onboarding' | 'home' | 'editor' | 'settings';
