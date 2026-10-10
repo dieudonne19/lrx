@@ -26,25 +26,25 @@ type EditorSnapshot = { lyrics: LyricLineData[]; activeIndex: number };
 export function EditorScreen({
   projectId,
   onBack,
-  onOpenMetadata,
+  onOpenMore,
 }: {
   projectId: string;
   onBack: () => void;
-  onOpenMetadata: () => void;
+  onOpenMore: () => void;
 }) {
   const storedProject = useLrxStore((state) => state.projects.find((item) => item.id === projectId));
   if (!storedProject) return null;
-  return <EditorSession storedProject={storedProject} onBack={onBack} onOpenMetadata={onOpenMetadata} />;
+  return <EditorSession storedProject={storedProject} onBack={onBack} onOpenMore={onOpenMore} />;
 }
 
 function EditorSession({
   storedProject,
   onBack,
-  onOpenMetadata,
+  onOpenMore,
 }: {
   storedProject: LrxProject;
   onBack: () => void;
-  onOpenMetadata: () => void;
+  onOpenMore: () => void;
 }) {
   const settings = useLrxStore((state) => state.settings);
   const updateStoredTimestamp = useLrxStore((state) => state.updateTimestamp);
@@ -190,7 +190,7 @@ function EditorSession({
               <Button variant="ghost" size="icon" onPress={redo} disabled={!future.length} className="rounded-full">
                 <Icon as={Redo2} className="size-[18px] text-foreground" />
               </Button>
-              <Button variant="ghost" size="icon" onPress={onOpenMetadata} className="rounded-full">
+              <Button variant="ghost" size="icon" onPress={onOpenMore} className="rounded-full">
                 <Icon as={MoreHorizontal} className="size-5 text-foreground" />
               </Button>
             </View>

@@ -4,7 +4,7 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import type { Project, ProjectFilter } from '@/lib/lrx-ui-types';
 import { Stack } from 'expo-router';
-import { ChevronRight, FileText, FolderOpen, Music2, Search, Settings, Upload } from 'lucide-react-native';
+import { ChevronRight, FileText, FolderOpen, MoreHorizontal, Music2, Search, Settings, Upload } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -14,12 +14,14 @@ export function HomeScreen({
   onImportLyrics,
   onImportAudio,
   onOpenSettings,
+  onMore,
 }: {
   projects: Project[];
   onOpen: (project: Project) => void;
   onImportLyrics: () => void;
   onImportAudio: () => void;
   onOpenSettings: () => void;
+  onMore: (project: Project) => void;
 }) {
   const [filter, setFilter] = React.useState<ProjectFilter>('all');
   const filteredProjects = React.useMemo(
@@ -63,7 +65,7 @@ export function HomeScreen({
             <View className="pt-1">
               {filteredProjects.length ? (
                 filteredProjects.map((project, index) => (
-                  <ProjectRow key={project.id} project={project} index={index} onOpen={onOpen} />
+                  <ProjectRow key={project.id} project={project} index={index} onOpen={onOpen} onMore={onMore} />
                 ))
               ) : (
                 <EmptyState
@@ -174,14 +176,27 @@ function FilterTabs({
   );
 }
 
-function ProjectRow({ project, index, onOpen }: { project: Project; index: number; onOpen: (project: Project) => void }) {
+function ProjectRow({
+  project,
+  index,
+  onOpen,
+  onMore,
+}: {
+  project: Project;
+  index: number;
+  onOpen: (project: Project) => void;
+  onMore: (project: Project) => void;
+}) {
   const percent = Math.round((project.synced / Math.max(1, project.total)) * 100);
   const statusText = project.status === 'done' ? 'FAIT' : project.status === 'draft' ? 'DRAFT' : `${percent}%`;
   const statusClass =
     project.status === 'done' ? 'text-chart-2' : project.status === 'draft' ? 'text-muted-foreground' : 'text-foreground';
 
   return (
-    <Pressable onPress={() => onOpen(project)} className="flex-row items-center gap-4 px-5 py-3">
+    <Pressable
+      onPress={() => onOpen(project)}
+      onLongPress={() => onMore(project)}
+      className="flex-row items-center gap-3 py-2 pl-5 pr-2">
       <ProjectCover colors={project.cover} size={50} index={index} status={project.status} />
       <View className="min-w-0 flex-1">
         <Text numberOfLines={1} className="text-[15px] font-medium text-foreground">
@@ -199,6 +214,14 @@ function ProjectRow({ project, index, onOpen }: { project: Project; index: numbe
         <Text className={`text-[11px] font-semibold tracking-[1px] ${statusClass}`}>{statusText}</Text>
         <Text className="mt-1 text-[10px] text-muted">{project.updated}</Text>
       </View>
+      <Button
+        variant="ghost"
+        size="icon"
+        accessibilityLabel={`Actions pour ${project.title}`}
+        onPress={() => onMore(project)}
+        className="size-12 rounded-full">
+        <Icon as={MoreHorizontal} className="size-5 text-muted-foreground" />
+      </Button>
     </Pressable>
   );
 }

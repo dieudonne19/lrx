@@ -3,3 +3,4 @@ export { ExportSheet } from './export-sheet';
 export { FineTuneSheet } from './fine-tune-sheet';
 export { ImportLyricsSheet } from './import-lyrics-sheet';
 export { MetadataSheet } from './metadata-sheet';
+export { MoreSheet, type MoreSheetItem } from './more-sheet';
