@@ -70,7 +70,7 @@ export function AudioPickerSheet({
             {picking ? 'Ouverture...' : 'Choisir un fichier audio'}
           </Text>
           <Text className="mt-1 text-center text-sm leading-5 text-muted-foreground">
-            MP3, WAV, M4A ou AAC. La lecture reelle sera branchee avec expo-av ensuite.
+            MP3, WAV, M4A ou AAC. La lecture reelle sera branchee avec expo-audio ensuite.
           </Text>
         </Pressable>
 
