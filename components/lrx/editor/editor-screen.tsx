@@ -49,6 +49,7 @@ function EditorSession({
   const settings = useLrxStore((state) => state.settings);
   const updateStoredTimestamp = useLrxStore((state) => state.updateTimestamp);
   const importStoredLyrics = useLrxStore((state) => state.importLyrics);
+  const updateStoredLyricText = useLrxStore((state) => state.updateLyricText);
   const restoreStoredLyrics = useLrxStore((state) => state.restoreLyrics);
   const project = React.useMemo(() => projectToViewProject(storedProject), [storedProject]);
   const lyrics = React.useMemo(() => projectLyricsToEditorLyrics(storedProject), [storedProject]);
@@ -61,6 +62,8 @@ function EditorSession({
   const [speed, setSpeed] = React.useState<0.5 | 1 | 1.5>(settings.defaultSpeed);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [karaokeOpen, setKaraokeOpen] = React.useState(false);
+  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
+  const editingRef = React.useRef<number | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
   const [fineTuneOpen, setFineTuneOpen] = React.useState(false);
   const [history, setHistory] = React.useState<EditorSnapshot[]>([]);
@@ -114,6 +117,18 @@ function EditorSession({
       project.id,
       snapshot.map((line, index) => ({ id: line.id ?? `${project.id}-restored-${index}`, text: line.text, t: line.t }))
     );
+  }
+
+  function commitLyricEdit(index: number, nextText: string) {
+    if (editingRef.current !== index) return;
+    editingRef.current = null;
+    setEditingIndex(null);
+    const line = lyrics[index];
+    const text = nextText.replace(/s+/g, ' ').trim();
+    if (!line?.id || !text || text === line.text) return;
+    setHistory((items) => [...items, { lyrics: lyrics.map((item) => ({ ...item })), activeIndex }]);
+    setFuture([]);
+    updateStoredLyricText(project.id, line.id, text);
   }
 
   function undo() {
@@ -247,6 +262,14 @@ function EditorSession({
                 line={line}
                 index={index}
                 active={index === activeIndex}
+                editing={index === editingIndex}
+                onEdit={() => {
+                  if (!line.text) return;
+                  setActiveIndex(index);
+                  editingRef.current = index;
+                  setEditingIndex(index);
+                }}
+                onCommitEdit={(text) => commitLyricEdit(index, text)}
                 onLayout={(event) => {
                   rowOffsets.current[index] = event.nativeEvent.layout.y;
                 }}
@@ -264,21 +287,25 @@ function EditorSession({
             ))}
           </ScrollView>
 
-          <View className="absolute bottom-0 left-0 right-0 h-40 bg-background" />
-          <View className="absolute bottom-5 left-3 right-3 flex-row items-center gap-2">
-            <Button variant="outline" size="icon" onPress={retreat} className="h-16 w-14 rounded-2xl bg-card">
-              <Icon as={ChevronLeft} className="size-6 text-foreground" />
-            </Button>
-            <Pressable
-              onPress={tapTime}
-              className="h-16 flex-1 flex-row items-center justify-center gap-3 rounded-2xl bg-primary px-5">
-              <View className={`size-2 rounded-full bg-white ${playing ? 'opacity-100' : 'opacity-60'}`} />
-              <Text className="text-[15px] font-bold uppercase tracking-[3px] text-primary-foreground">Tap Time</Text>
-            </Pressable>
-            <Button variant="outline" size="icon" onPress={advance} className="h-16 w-14 rounded-2xl bg-card">
-              <Icon as={ChevronRight} className="size-6 text-foreground" />
-            </Button>
-          </View>
+          {editingIndex == null ? (
+            <>
+              <View className="absolute bottom-0 left-0 right-0 h-40 bg-background" />
+              <View className="absolute bottom-5 left-3 right-3 flex-row items-center gap-2">
+                <Button variant="outline" size="icon" onPress={retreat} className="h-16 w-14 rounded-2xl bg-card">
+                  <Icon as={ChevronLeft} className="size-6 text-foreground" />
+                </Button>
+                <Pressable
+                  onPress={tapTime}
+                  className="h-16 flex-1 flex-row items-center justify-center gap-3 rounded-2xl bg-primary px-5">
+                  <View className={`size-2 rounded-full bg-white ${playing ? 'opacity-100' : 'opacity-60'}`} />
+                  <Text className="text-[15px] font-bold uppercase tracking-[3px] text-primary-foreground">Tap Time</Text>
+                </Pressable>
+                <Button variant="outline" size="icon" onPress={advance} className="h-16 w-14 rounded-2xl bg-card">
+                  <Icon as={ChevronRight} className="size-6 text-foreground" />
+                </Button>
+              </View>
+            </>
+          ) : null}
         </ScreenBody>
       </Screen>
       {importOpen ? (

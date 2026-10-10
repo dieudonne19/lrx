@@ -4,7 +4,7 @@ import { formatTime } from '@/lib/lrx-editor-utils';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
 import { SlidersHorizontal } from 'lucide-react-native';
 import * as React from 'react';
-import { LayoutChangeEvent, Pressable, View } from 'react-native';
+import { LayoutChangeEvent, Pressable, TextInput, View } from 'react-native';
 
 export function LyricRow({
   line,
@@ -12,7 +12,10 @@ export function LyricRow({
   active,
   past,
   onPress,
+  editing,
   onFineTune,
+  onEdit,
+  onCommitEdit,
   onLayout,
 }: {
   line: LyricLineData;
@@ -20,10 +23,18 @@ export function LyricRow({
   active: boolean;
   past: boolean;
   onPress: () => void;
+  editing: boolean;
   onFineTune: () => void;
+  onEdit: () => void;
+  onCommitEdit: (text: string) => void;
   onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const instrumental = !line.text;
+  const [draft, setDraft] = React.useState(line.text);
+
+  React.useEffect(() => {
+    if (editing) setDraft(line.text);
+  }, [editing, line.text]);
   const textClass = active
     ? 'text-[22px] font-semibold leading-7 text-foreground'
     : past
@@ -34,6 +45,7 @@ export function LyricRow({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onEdit}
       onLayout={onLayout}
       className={`flex-row items-baseline gap-3 px-5 py-3 ${active ? 'border-l-2 border-primary bg-primary/10 pl-[18px]' : ''}`}>
       <Text className={`w-14 text-right font-mono text-[11px] ${active ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -48,8 +60,21 @@ export function LyricRow({
         </View>
       ) : (
         <View className="min-w-0 flex-1 flex-row items-center gap-2">
-          <Text className={`min-w-0 flex-1 ${textClass}`}>{line.text}</Text>
-          {active ? (
+          {editing ? (
+            <TextInput
+              autoFocus
+              value={draft}
+              onChangeText={setDraft}
+              onSubmitEditing={() => onCommitEdit(draft)}
+              onBlur={() => onCommitEdit(draft)}
+              returnKeyType="done"
+              blurOnSubmit
+              className={`min-w-0 flex-1 rounded-lg border border-primary/40 bg-card px-2 py-1 ${textClass}`}
+            />
+          ) : (
+            <Text className={`min-w-0 flex-1 ${textClass}`}>{line.text}</Text>
+          )}
+          {active && !editing ? (
             <Pressable
               onPress={(event) => {
                 event.stopPropagation();
