@@ -1,6 +1,6 @@
 import { EmptyState, Screen, ScreenBody } from '@/components/lrx';
 import { Fade } from '@/components/lrx/fade';
-import { ExportSheet, FineTuneSheet, ImportLyricsSheet } from '@/components/lrx/sheets';
+import { AudioPickerSheet, ExportSheet, FineTuneSheet, ImportLyricsSheet } from '@/components/lrx/sheets';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -21,7 +21,11 @@ import * as React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { EditorWaveform } from './editor-waveform';
 import { KaraokeMode } from './karaoke-mode';
+import { useEditorAudio } from './use-editor-audio';
 import { LyricRow } from './lyric-row';
+
+// Without audio the duration is unknown, so timing edits fall back to a one hour bound.
+const FINE_TUNE_FALLBACK_DURATION = 3600;
 
 type EditorSnapshot = { lyrics: LyricLineData[]; activeIndex: number };
 
@@ -59,9 +63,10 @@ function EditorSession({
     const next = lyrics.findIndex((line) => line.text && line.t == null);
     return next === -1 ? 0 : next;
   });
-  const [time, setTime] = React.useState(18.6);
-  const [playing, setPlaying] = React.useState(false);
-  const [speed, setSpeed] = React.useState<0.5 | 1 | 1.5>(settings.defaultSpeed);
+  const audio = useEditorAudio(storedProject, settings.defaultSpeed);
+  const { time, duration, playing, speed } = audio;
+  const attachStoredAudio = useLrxStore((state) => state.attachAudio);
+  const [audioOpen, setAudioOpen] = React.useState(false);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [karaokeOpen, setKaraokeOpen] = React.useState(false);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
@@ -72,22 +77,8 @@ function EditorSession({
   const [future, setFuture] = React.useState<EditorSnapshot[]>([]);
   const scrollRef = React.useRef<ScrollView>(null);
   const rowOffsets = React.useRef<Record<number, number>>({});
-  const duration = 222;
   const synced = lyrics.filter((line) => line.text && line.t != null).length;
   const total = lyrics.filter((line) => line.text).length;
-
-  React.useEffect(() => {
-    if (!playing) return;
-    const timer = setInterval(() => {
-      setTime((current) => {
-        const next = Math.min(duration, current + 0.2 * speed);
-        if (next >= duration) setPlaying(false);
-        return next;
-      });
-    }, 200);
-
-    return () => clearInterval(timer);
-  }, [duration, playing, speed]);
 
   React.useEffect(() => {
     if (!settings.autoScroll) return;
@@ -106,11 +97,11 @@ function EditorSession({
 
   function tapTime() {
     const activeLine = lyrics[activeIndex];
-    if (!activeLine?.text) return;
+    if (!activeLine?.text || !audio.hasAudio) return;
     tapFeedback(settings.haptics);
     setHistory((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
     setFuture([]);
-    if (activeLine.id) updateStoredTimestamp(project.id, activeLine.id, time);
+    if (activeLine.id) updateStoredTimestamp(project.id, activeLine.id, audio.getTime());
     setActiveIndex((current) => findNextLyric(lyrics, current));
   }
 
@@ -151,10 +142,6 @@ function EditorSession({
     setFuture((items) => items.slice(0, -1));
   }
 
-  function cycleSpeed() {
-    setSpeed((current) => (current === 0.5 ? 1 : current === 1 ? 1.5 : 0.5));
-  }
-
   function updateActiveTimestamp(nextTime: number) {
     const activeLine = lyrics[activeIndex];
     if (!activeLine?.text) return;
@@ -162,7 +149,7 @@ function EditorSession({
     setHistory((items) => [...items, { lyrics: lyrics.map((line) => ({ ...line })), activeIndex }]);
     setFuture([]);
     if (activeLine.id) updateStoredTimestamp(project.id, activeLine.id, boundedTime);
-    setTime(boundedTime);
+    audio.seekTo(boundedTime);
   }
 
   return (
@@ -179,7 +166,7 @@ function EditorSession({
                 {project.title}
               </Text>
               <Text className="mt-0.5 font-mono text-[10.5px] text-muted-foreground">
-                {synced}/{total} synchronises - {speed}x
+                {synced}/{total} synchronisées · {speed}×
               </Text>
             </View>
             <View className="flex-row">
@@ -203,29 +190,47 @@ function EditorSession({
               <Text className="font-mono text-[22px] font-semibold leading-7 tracking-[-0.44px] text-foreground">{formatTime(time)}</Text>
               <Text className="font-mono text-xs text-subtle">{formatTime(duration)}</Text>
             </View>
-            <EditorWaveform
-              progress={time / duration}
-              marks={lyrics.map((line) => line.t)}
-              duration={duration}
-              onSeek={(nextTime) => setTime(nextTime)}
-            />
+            {!audio.hasAudio ? (
+              <AudioNotice
+                message="Aucun audio. Ajoute un fichier pour lire et synchroniser."
+                cta="Ajouter un audio"
+                onPress={() => setAudioOpen(true)}
+              />
+            ) : audio.error ? (
+              <AudioNotice
+                message="Ce fichier audio ne peut pas être lu."
+                cta="Remplacer"
+                onPress={() => setAudioOpen(true)}
+              />
+            ) : (
+              <EditorWaveform
+                progress={duration ? time / duration : 0}
+                marks={lyrics.map((line) => line.t)}
+                duration={duration}
+                onSeek={audio.seekTo}
+              />
+            )}
 
             <View className="mt-4 flex-row items-center justify-between">
-              <Button variant="ghost" onPress={cycleSpeed} className="h-10 w-16 rounded-xl px-0">
-                <Text className="font-mono text-xs">{speed}x</Text>
+              <Button variant="ghost" onPress={audio.cycleSpeed} disabled={!audio.hasAudio} className="h-10 w-16 rounded-xl px-0">
+                <Text className="font-mono text-xs">{speed}×</Text>
               </Button>
               <View className="flex-row items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  onPress={() => setTime((current) => Math.max(0, current - 5))}
+                  accessibilityLabel="Reculer de 5 secondes"
+                  disabled={!audio.hasAudio}
+                  onPress={() => audio.seekBy(-5)}
                   className="rounded-full">
                   <Icon as={Rewind} className="size-5 text-foreground" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
-                  onPress={() => setPlaying((current) => !current)}
+                  accessibilityLabel={playing ? 'Pause' : 'Lecture'}
+                  disabled={!audio.hasAudio}
+                  onPress={audio.toggle}
                   style={{ shadowColor: '#FFFFFF', shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: 6 } }}
                   className="size-14 rounded-full border-0 bg-foreground">
                   <Icon as={playing ? Pause : Play} className="size-6 text-background" />
@@ -233,7 +238,9 @@ function EditorSession({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onPress={() => setTime((current) => Math.min(duration, current + 5))}
+                  accessibilityLabel="Avancer de 5 secondes"
+                  disabled={!audio.hasAudio}
+                  onPress={() => audio.seekBy(5)}
                   className="rounded-full">
                   <Icon as={FastForward} className="size-5 text-foreground" />
                 </Button>
@@ -303,8 +310,9 @@ function EditorSession({
                 <Pressable
                   onPress={tapTime}
                   accessibilityLabel="Tap time"
+                  disabled={!audio.hasAudio}
                   style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.45, shadowRadius: 20, shadowOffset: { width: 0, height: 14 }, elevation: 10 }}
-                  className="h-16 flex-1 rounded-[18px]">
+                  className={`h-16 flex-1 rounded-[18px] ${audio.hasAudio ? '' : 'opacity-40'}`}>
                   <View className="h-16 flex-row items-center justify-center gap-3 overflow-hidden rounded-[18px] px-[18px]">
                     <LinearGradient colors={['#9A82FF', '#7C5CFF']} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
                     <View
@@ -322,6 +330,16 @@ function EditorSession({
           ) : null}
         </ScreenBody>
       </Screen>
+      {audioOpen ? (
+        <AudioPickerSheet
+          title={audio.hasAudio ? 'Remplacer l’audio' : 'Ajouter un audio'}
+          onClose={() => setAudioOpen(false)}
+          onPicked={(picked) => {
+            attachStoredAudio(project.id, picked);
+            setAudioOpen(false);
+          }}
+        />
+      ) : null}
       {importOpen ? (
         <ImportLyricsSheet
           onClose={() => setImportOpen(false)}
@@ -345,7 +363,7 @@ function EditorSession({
           line={lyrics[activeIndex]}
           index={activeIndex}
           time={lyrics[activeIndex]?.t ?? time}
-          duration={duration}
+          duration={duration || FINE_TUNE_FALLBACK_DURATION}
           onClose={() => setFineTuneOpen(false)}
           onSave={(nextTime) => {
             updateActiveTimestamp(nextTime);
@@ -361,10 +379,21 @@ function EditorSession({
           duration={duration}
           playing={playing}
           onClose={() => setKaraokeOpen(false)}
-          onTogglePlay={() => setPlaying((current) => !current)}
-          onSeekBy={(seconds) => setTime((current) => Math.max(0, Math.min(duration, current + seconds)))}
+          onTogglePlay={audio.toggle}
+          onSeekBy={audio.seekBy}
         />
       ) : null}
     </>
+  );
+}
+
+function AudioNotice({ message, cta, onPress }: { message: string; cta: string; onPress: () => void }) {
+  return (
+    <View className="h-[68px] flex-row items-center gap-3 rounded-xl border border-dashed border-border px-4">
+      <Text className="min-w-0 flex-1 text-xs leading-4 text-muted-foreground">{message}</Text>
+      <Button variant="outline" onPress={onPress} className="h-10 rounded-lg px-3">
+        <Text className="text-xs">{cta}</Text>
+      </Button>
+    </View>
   );
 }
