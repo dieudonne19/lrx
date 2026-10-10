@@ -2,32 +2,35 @@ import { Screen, ScreenBody } from '@/components/lrx';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, View } from 'react-native';
-import Svg, { Circle, Defs, Line, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 
 const SLIDES = [
   {
-    eyebrow: 'LRX - 01',
+    eyebrow: 'LRX · 01',
     title: 'Synchronise tes paroles\navec ta musique.',
-    body: 'Un editeur .lrc taille pour les studios, les karaokes et les createurs. Rapide, tactile, precis.',
+    body: 'Un éditeur .lrc taillé pour les studios, les karaokés et les créateurs. Rapide, tactile, précis.',
     art: 'wave',
   },
   {
-    eyebrow: 'LRX - 02',
+    eyebrow: 'LRX · 02',
     title: 'Un seul geste.\nUn seul bouton.',
-    body: 'Lis ta musique, tape sur TAP TIME au bon moment. La ligne active recoit le timestamp, la suivante avance automatiquement.',
+    body: 'Lis ta musique, tape sur TAP TIME au bon moment. La ligne active reçoit le timestamp, la suivante s’enchaîne automatiquement.',
     art: 'tap',
   },
   {
-    eyebrow: 'LRX - 03',
-    title: 'Export .lrc propre,\npret a partager.',
-    body: 'Apercu fichier, copie, partage, ou export direct. Metadonnees, lyrics, timestamps: tout sort en standard.',
+    eyebrow: 'LRX · 03',
+    title: 'Export .lrc propre,\nprêt à partager.',
+    body: 'Aperçu fichier, copie, partage, ou export direct. Métadonnées, lyrics, timestamps — tout sort en standard.',
     art: 'export',
   },
 ] as const;
+
+const GLOW = { textShadowColor: 'rgba(124, 92, 255, 0.5)', textShadowRadius: 20, textShadowOffset: { width: 0, height: 0 } };
 
 export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = React.useState(0);
@@ -43,52 +46,45 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     setStep(step + 1);
   }
 
-  function skip() {
-    onComplete();
-  }
-
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <Screen padded>
-        <ScreenBody className="justify-between">
-          <View>
+      <Screen>
+        <ScreenBody>
+          <View className="flex-1 px-7 pt-6">
             <Progress step={step} onSelect={setStep} />
-            <View className="min-h-[260px] items-center justify-center">
+            <View className="min-h-[220px] flex-1 items-center justify-center">
               {slide.art === 'wave' ? <WaveArt /> : null}
               {slide.art === 'tap' ? <TapArt /> : null}
               {slide.art === 'export' ? <ExportArt /> : null}
             </View>
-          </View>
 
-          <View className="gap-8 pb-3">
             <View>
-              <Text className="text-xs font-semibold uppercase tracking-[2.4px] text-primary">
+              <Text className="text-[11px] font-semibold uppercase tracking-[1.32px] text-primary">
                 {slide.eyebrow}
               </Text>
-              <Text className="mt-4 text-[38px] font-semibold leading-[42px] text-foreground">
+              <Text className="my-3.5 text-[32px] font-semibold leading-[34px] tracking-[-0.8px] text-foreground">
                 {slide.title}
               </Text>
-              <Text className="mt-4 max-w-[320px] text-base leading-6 text-muted-foreground">
-                {slide.body}
-              </Text>
+              <Text className="max-w-[320px] text-sm leading-[20px] text-muted-foreground">{slide.body}</Text>
             </View>
+          </View>
 
-            <View className="flex-row items-center gap-3">
-              <Button variant="ghost" size="lg" onPress={skip} className="px-4">
-                <Text className="text-muted-foreground">Passer</Text>
-              </Button>
-              <View className="flex-1" />
-              <Pressable
-                onPress={goNext}
-                hitSlop={10}
-                className="h-14 min-w-[150px] flex-row items-center justify-center gap-2 rounded-2xl bg-primary px-6 active:scale-[0.98] active:bg-primary/90">
-                <Text className="text-sm font-medium text-primary-foreground">
-                  {isLast ? 'Commencer' : 'Continuer'}
-                </Text>
-                <Icon as={ChevronRight} className="size-5 text-primary-foreground" />
-              </Pressable>
-            </View>
+          <View className="flex-row items-center gap-2.5 px-[22px] pb-6 pt-5">
+            <Button variant="ghost" size="lg" onPress={onComplete} className="px-4">
+              <Text className="text-muted-foreground">Passer</Text>
+            </Button>
+            <View className="flex-1" />
+            <Pressable
+              onPress={goNext}
+              hitSlop={10}
+              style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6 }}
+              className="h-12 min-w-[140px] rounded-[10px] active:opacity-90">
+              <View className="h-12 flex-row items-center justify-center gap-2 overflow-hidden rounded-[10px] bg-primary px-5">
+                <Text className="text-[15px] font-medium text-white">{isLast ? 'Commencer' : 'Continuer'}</Text>
+                <Icon as={ChevronRight} className="size-[18px] text-white" />
+              </View>
+            </Pressable>
           </View>
         </ScreenBody>
       </Screen>
@@ -98,12 +94,14 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
 
 function Progress({ step, onSelect }: { step: number; onSelect: (step: number) => void }) {
   return (
-    <View className="mt-2 flex-row gap-1.5">
+    <View className="mb-7 flex-row gap-1.5">
       {SLIDES.map((slide, index) => (
         <Pressable
           key={slide.eyebrow}
+          accessibilityLabel={`Étape ${index + 1}`}
+          hitSlop={8}
           onPress={() => onSelect(index)}
-          className={`h-1 rounded-full ${index === step ? 'flex-[3] bg-primary' : 'flex-1 bg-input'}`}
+          className={`h-[3px] rounded-full ${index === step ? 'flex-[3] bg-primary' : 'flex-1 bg-input'}`}
         />
       ))}
     </View>
@@ -117,57 +115,64 @@ function WaveArt() {
   });
 
   return (
-    <Svg width={260} height={210} viewBox="0 0 260 210">
+    <Svg width={260} height={200} viewBox="0 0 260 200">
       <Defs>
-        <LinearGradient id="waveFill" x1="0" y1="0" x2="1" y2="0">
+        <SvgGradient id="waveFill" x1="0" y1="0" x2="1" y2="0">
           <Stop offset="0" stopColor="#22252C" />
-          <Stop offset="0.44" stopColor="#22252C" />
+          <Stop offset="0.45" stopColor="#22252C" />
           <Stop offset="0.45" stopColor="#7C5CFF" />
           <Stop offset="1" stopColor="#9A82FF" />
-        </LinearGradient>
+        </SvgGradient>
       </Defs>
       {bars.map((bar) => (
-        <Rect key={bar.x} x={bar.x} y={bar.y + 5} width={5} height={bar.height} rx={2.5} fill="url(#waveFill)" />
+        <Rect key={bar.x} x={bar.x} y={bar.y} width={5} height={bar.height} rx={2.5} fill="url(#waveFill)" />
       ))}
-      <Line x1={120} x2={120} y1={25} y2={185} stroke="#F2F3F6" strokeWidth={1} opacity={0.72} />
-      <Circle cx={120} cy={25} r={4} fill="#F2F3F6" />
+      <Line x1={120} x2={120} y1={20} y2={180} stroke="#FFFFFF" strokeWidth={1} opacity={0.7} />
+      <Circle cx={120} cy={20} r={4} fill="#FFFFFF" />
     </Svg>
   );
 }
 
 function TapArt() {
   return (
-    <View className="relative h-[235px] w-[280px] items-center">
-      <View className="absolute left-0 right-0 top-2 gap-2 rounded-2xl border border-border bg-card px-5 py-4">
-        <Text className="text-sm text-muted-foreground">Sous les neons</Text>
-        <Text className="text-sm text-muted-foreground">Je cherche encore</Text>
-        <Text className="text-lg font-semibold text-foreground">Les rues parlent en silence</Text>
-        <Text className="text-sm text-subtle">La nuit garde sa cadence</Text>
+    <View className="h-[220px] w-[260px]">
+      <View className="absolute left-0 right-0 top-0 rounded-[14px] border border-border bg-card px-[18px] py-3.5">
+        <Text className="text-[13px] leading-[19px] text-muted-foreground">Sous les néons</Text>
+        <Text className="text-[13px] leading-[19px] text-muted-foreground">Je cherche encore</Text>
+        <Text style={GLOW} className="text-[17px] font-semibold leading-6 text-foreground">
+          Les rues parlent en silence
+        </Text>
+        <Text className="text-[13px] leading-[19px] text-subtle">La nuit garde sa cadence</Text>
       </View>
 
-      <View className="absolute bottom-8 h-16 w-[220px] items-center justify-center rounded-2xl border border-primary bg-primary">
-        <Text className="text-xs font-semibold uppercase tracking-[3px] text-primary-foreground">Tap Time</Text>
+      <View className="absolute bottom-[-10px] h-[76px] w-[240px] self-center rounded-[18px] border-[1.5px] border-primary opacity-50" />
+      <View
+        style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 16 }, elevation: 10 }}
+        className="absolute bottom-0 h-14 w-[200px] self-center rounded-2xl">
+        <View className="h-14 items-center justify-center overflow-hidden rounded-2xl">
+          <LinearGradient colors={['#9A82FF', '#7C5CFF']} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
+          <Text className="text-[13px] font-semibold uppercase tracking-[2.3px] text-white">Tap Time</Text>
+        </View>
       </View>
-      <View className="absolute bottom-5 h-20 w-[252px] rounded-[22px] border border-primary/50" />
     </View>
   );
 }
 
 function ExportArt() {
   return (
-    <View className="w-[286px] rounded-2xl border border-border bg-card px-5 py-5">
-      <View className="mb-4 flex-row items-center gap-1.5">
-        <View className="size-2.5 rounded-full bg-muted" />
-        <View className="size-2.5 rounded-full bg-muted" />
-        <View className="size-2.5 rounded-full bg-primary" />
-        <Text className="ml-auto font-mono text-[10px] text-muted-foreground">track.lrc</Text>
+    <View className="w-[280px] rounded-[14px] border border-border bg-card px-[18px] pb-[22px] pt-[18px]">
+      <View className="mb-3 flex-row items-center gap-1.5">
+        <View className="size-[9px] rounded-full bg-faint" />
+        <View className="size-[9px] rounded-full bg-faint" />
+        <View className="size-[9px] rounded-full bg-primary" />
+        <Text className="ml-auto text-[10px] text-subtle">track.lrc</Text>
       </View>
-      <CodeLine muted="[ti:" text="Neons" end="]" />
+      <CodeLine muted="[ti:" text="Néons" end="]" />
       <CodeLine muted="[ar:" text="Camille Roux" end="]" />
-      <View className="h-3" />
-      <CodeLine muted="[00:12.40]" text=" Sous les neons" accent />
+      <View className="h-2" />
+      <CodeLine muted="[00:12.40]" text=" Sous les néons" accent />
       <CodeLine muted="[00:16.10]" text=" Je cherche encore" accent />
-      <CodeLine muted="[00:20.05]" text=" Les rues parlent..." accent />
+      <CodeLine muted="[00:20.05]" text=" Les rues parlent…" accent />
     </View>
   );
 }
@@ -185,11 +190,9 @@ function CodeLine({
 }) {
   return (
     <View className="flex-row">
-      <Text className={`font-mono text-xs leading-5 ${accent ? 'text-primary' : 'text-muted-foreground'}`}>
-        {muted}
-      </Text>
-      <Text className="font-mono text-xs leading-5 text-foreground">{text}</Text>
-      {end ? <Text className="font-mono text-xs leading-5 text-muted-foreground">{end}</Text> : null}
+      <Text className={`font-mono text-xs leading-[18px] ${accent ? 'text-primary' : 'text-subtle'}`}>{muted}</Text>
+      <Text className="font-mono text-xs leading-[18px] text-secondary-foreground">{text}</Text>
+      {end ? <Text className="font-mono text-xs leading-[18px] text-subtle">{end}</Text> : null}
     </View>
   );
 }
