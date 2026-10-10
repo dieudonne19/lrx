@@ -1,4 +1,5 @@
 import { EmptyState, Screen, ScreenBody } from '@/components/lrx';
+import { Fade } from '@/components/lrx/fade';
 import { ExportSheet, FineTuneSheet, ImportLyricsSheet } from '@/components/lrx/sheets';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -13,6 +14,7 @@ import {
 import { tapFeedback } from '@/lib/haptics';
 import { useLrxStore, type LrxProject } from '@/lib/lrx-store';
 import type { LyricLineData } from '@/lib/lrx-ui-types';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
 import { ArrowLeft, ChevronLeft, ChevronRight, Eye, FastForward, FileText, Maximize2, MoreHorizontal, Pause, Play, Redo2, Rewind, SlidersHorizontal, Undo2 } from 'lucide-react-native';
 import * as React from 'react';
@@ -176,7 +178,7 @@ function EditorSession({
               <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
                 {project.title}
               </Text>
-              <Text className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+              <Text className="mt-0.5 font-mono text-[10.5px] text-muted-foreground">
                 {synced}/{total} synchronises - {speed}x
               </Text>
             </View>
@@ -196,10 +198,10 @@ function EditorSession({
             </View>
           </View>
 
-          <View className="border-b border-border bg-card/35 px-5 pb-4 pt-1">
+          <View className="border-b border-border/60 bg-popover/60 px-[18px] pb-3.5 pt-1">
             <View className="mb-2 flex-row items-end justify-between">
-              <Text className="font-mono text-[28px] font-semibold leading-8 text-foreground">{formatTime(time)}</Text>
-              <Text className="font-mono text-xs text-muted-foreground">{formatTime(duration)}</Text>
+              <Text className="font-mono text-[22px] font-semibold leading-7 tracking-[-0.44px] text-foreground">{formatTime(time)}</Text>
+              <Text className="font-mono text-xs text-subtle">{formatTime(duration)}</Text>
             </View>
             <EditorWaveform
               progress={time / duration}
@@ -224,7 +226,8 @@ function EditorSession({
                   variant="outline"
                   size="icon"
                   onPress={() => setPlaying((current) => !current)}
-                  className="size-14 rounded-full bg-foreground">
+                  style={{ shadowColor: '#FFFFFF', shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: 6 } }}
+                  className="size-14 rounded-full border-0 bg-foreground">
                   <Icon as={playing ? Pause : Play} className="size-6 text-background" />
                 </Button>
                 <Button
@@ -255,7 +258,8 @@ function EditorSession({
               onCta={() => setImportOpen(true)}
             />
           ) : null}
-          <ScrollView ref={scrollRef} className="flex-1" contentContainerClassName="pb-40 pt-5" showsVerticalScrollIndicator={false}>
+          <View className="flex-1">
+          <ScrollView ref={scrollRef} className="flex-1" contentContainerClassName="pb-[220px] pt-6" showsVerticalScrollIndicator={false}>
             {lyrics.map((line, index) => (
               <LyricRow
                 key={`${index}-${line.text}`}
@@ -286,21 +290,31 @@ function EditorSession({
               />
             ))}
           </ScrollView>
+          <Fade direction="down" className="absolute left-0 right-0 top-0 h-8" />
+          </View>
 
           {editingIndex == null ? (
             <>
-              <View className="absolute bottom-0 left-0 right-0 h-40 bg-background" />
-              <View className="absolute bottom-5 left-3 right-3 flex-row items-center gap-2">
-                <Button variant="outline" size="icon" onPress={retreat} className="h-16 w-14 rounded-2xl bg-card">
+              <Fade direction="up" className="absolute bottom-0 left-0 right-0 h-[140px]" />
+              <View className="absolute bottom-[18px] left-3.5 right-3.5 flex-row items-stretch gap-2">
+                <Button variant="outline" size="icon" onPress={retreat} className="h-16 w-14 rounded-[18px] border-border bg-secondary">
                   <Icon as={ChevronLeft} className="size-6 text-foreground" />
                 </Button>
                 <Pressable
                   onPress={tapTime}
-                  className="h-16 flex-1 flex-row items-center justify-center gap-3 rounded-2xl bg-primary px-5">
-                  <View className={`size-2 rounded-full bg-white ${playing ? 'opacity-100' : 'opacity-60'}`} />
-                  <Text className="text-[15px] font-bold uppercase tracking-[3px] text-primary-foreground">Tap Time</Text>
+                  accessibilityLabel="Tap time"
+                  style={{ shadowColor: '#7C5CFF', shadowOpacity: 0.45, shadowRadius: 20, shadowOffset: { width: 0, height: 14 }, elevation: 10 }}
+                  className="h-16 flex-1 rounded-[18px]">
+                  <View className="h-16 flex-row items-center justify-center gap-3 overflow-hidden rounded-[18px] px-[18px]">
+                    <LinearGradient colors={['#9A82FF', '#7C5CFF']} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} />
+                    <View
+                      style={{ shadowColor: '#FFFFFF', shadowOpacity: 0.8, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } }}
+                      className={`size-2 rounded-full bg-white ${playing ? 'opacity-100' : 'opacity-60'}`}
+                    />
+                    <Text className="text-[15px] font-bold uppercase tracking-[3.3px] text-white">Tap Time</Text>
+                  </View>
                 </Pressable>
-                <Button variant="outline" size="icon" onPress={advance} className="h-16 w-14 rounded-2xl bg-card">
+                <Button variant="outline" size="icon" onPress={advance} className="h-16 w-14 rounded-[18px] border-border bg-secondary">
                   <Icon as={ChevronRight} className="size-6 text-foreground" />
                 </Button>
               </View>

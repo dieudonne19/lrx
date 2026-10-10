@@ -29,6 +29,7 @@
       --color-muted: #ECEEF4;
       --color-muted-foreground: #68707D;
       --color-subtle: #8E95A3;
+      --color-primary-hi: #7C5CFF;
       --color-faint: #C1C6D1;
       --color-accent: #7C5CFF;
       --color-accent-foreground: #FFFFFF;
@@ -65,6 +66,7 @@
       --color-muted: #1A1C21;
       --color-muted-foreground: #8A8F99;
       --color-subtle: #5C6068;
+      --color-primary-hi: #9A82FF;
       --color-faint: #3A3D44;
       --color-accent: #7C5CFF;
       --color-accent-foreground: #FFFFFF;

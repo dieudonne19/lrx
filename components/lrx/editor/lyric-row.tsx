@@ -7,6 +7,9 @@ import { SlidersHorizontal } from 'lucide-react-native';
 import * as React from 'react';
 import { LayoutChangeEvent, Pressable, TextInput, View } from 'react-native';
 
+// Active line treatment from the mockup (highlight style "glow").
+const GLOW = { textShadowColor: 'rgba(124, 92, 255, 0.45)', textShadowRadius: 24, textShadowOffset: { width: 0, height: 0 } };
+
 export function LyricRow({
   line,
   index,
@@ -37,10 +40,10 @@ export function LyricRow({
     if (editing) setDraft(line.text);
   }, [editing, line.text]);
   const textClass = active
-    ? 'text-[22px] font-semibold leading-7 text-foreground'
+    ? 'text-[22px] font-semibold leading-[26px] text-foreground'
     : past
-      ? 'text-base leading-6 text-muted-foreground'
-      : 'text-base leading-6 text-subtle';
+      ? 'text-base leading-[21px] text-muted-foreground'
+      : 'text-base leading-[21px] text-subtle';
   const timestamp = line.t == null ? (active ? '....' : '') : formatTime(line.t);
 
   return (
@@ -48,8 +51,11 @@ export function LyricRow({
       onPress={onPress}
       onLongPress={onEdit}
       onLayout={onLayout}
-      className={`flex-row items-baseline gap-3 px-5 py-3 ${active ? 'border-l-2 border-primary bg-primary/10 pl-[18px]' : ''}`}>
-      <Text className={`w-14 text-right font-mono text-[11px] ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+      className="flex-row items-baseline gap-3 px-[22px] py-3.5">
+      <Text
+        className={`w-14 text-right font-mono text-[11px] font-medium ${
+          active ? 'text-primary-hi' : past ? 'text-muted-foreground' : 'text-subtle'
+        }`}>
         {timestamp}
       </Text>
       {instrumental ? (
@@ -57,7 +63,7 @@ export function LyricRow({
           <View className="size-1 rounded-full bg-faint" />
           <View className="size-1 rounded-full bg-faint" />
           <View className="size-1 rounded-full bg-faint" />
-          <Text className="ml-2 text-[11px] uppercase tracking-[1.6px] text-subtle">Instrumental</Text>
+          <Text className="ml-2 text-[11px] uppercase italic tracking-[1.3px] text-subtle">Instrumental</Text>
         </View>
       ) : (
         <View className="min-w-0 flex-1 flex-row items-center gap-2">
@@ -74,7 +80,9 @@ export function LyricRow({
               className={`min-w-0 flex-1 rounded-lg border border-primary/40 bg-card px-2 py-1 ${textClass}`}
             />
           ) : (
-            <Text className={`min-w-0 flex-1 ${textClass}`}>{line.text}</Text>
+            <Text style={active ? GLOW : undefined} className={`min-w-0 flex-1 ${textClass}`}>
+              {line.text}
+            </Text>
           )}
           {active && !editing ? (
             <Pressable
