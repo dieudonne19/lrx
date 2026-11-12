@@ -1,73 +1,96 @@
-# Minimal Uniwind Template
+# LRX
 
-This is a [React Native](https://reactnative.dev/) project built with [Expo](https://expo.dev/) and [React Native Reusables](https://reactnativereusables.com).
+Application mobile pour créer des fichiers de paroles synchronisées **`.lrc`** à partir de ses propres morceaux : on importe un fichier audio, on colle les paroles, puis on tape le rythme ligne par ligne pendant la lecture.
 
-It was initialized using the following command, then the `Minimal (Uniwind)` template was selected when prompted:
+Construite avec [Expo](https://expo.dev/) (SDK 57), [Expo Router](https://docs.expo.dev/router/introduction/), [Uniwind](https://uniwind.dev/) (Tailwind CSS v4) et [React Native Reusables](https://reactnativereusables.com). Elle tourne dans **Expo Go**, sans build natif.
 
-```bash
-npx @react-native-reusables/cli@latest init
+## Fonctionnalités
+
+- **Projets** : un projet par morceau, avec filtres (tous, en cours, finalisés, brouillons), renommage et suppression. Un même fichier audio (même nom et même taille) ne peut pas être importé deux fois.
+- **Import audio** : MP3, WAV, M4A, AAC, FLAC et OGG, 100 Mo maximum. Le fichier est copié dans le dossier de l'app pour survivre au vidage du cache.
+- **Import des paroles** : coller le texte, nettoyé et découpé en lignes. Une ligne se corrige par appui long dans l'éditeur.
+- **TAP TIME** : un tap pendant la lecture date la ligne courante.
+  - Déclenché dès le contact du doigt, avec retour haptique.
+  - Décalage réglable (80 ms par défaut, de 0 à 300 ms) pour compenser le temps de réaction et la latence audio.
+  - Annuler / rétablir.
+- **Lecteur** : lecture/pause, avance et retour de 5 s, seek sur la forme d'onde, vitesses 0.5x, 1x et 1.5x.
+- **Ajustement fin** : corriger le timestamp de la ligne active par pas de ±0,05 s ou ±0,25 s.
+- **Aperçu karaoké** : les paroles défilent sur la ligne en cours de lecture.
+- **Métadonnées** : titre, artiste, album, auteur et genre, écrits comme tags LRC (`[ti:]`, `[ar:]`, `[al:]`, `[by:]`, `[re:]`).
+- **Export** : partager, copier ou enregistrer le `.lrc` dans un dossier choisi. Le fichier porte le nom du morceau (`chanson.mp3` → `chanson.lrc`). Une confirmation est demandée s'il reste des lignes non synchronisées.
+- **Réglages** : thème (système, sombre, clair), vitesse par défaut, vibrations, défilement automatique, confirmation d'export, décalage TAP TIME.
+
+Les timestamps sont au format `[mm:ss.cc]`, arrondis au centième de seconde :
+
+```text
+[ti:Ma chanson]
+[ar:Artiste]
+
+[00:12.40] Première ligne
+[00:15.05] Deuxième ligne
 ```
 
-## Getting Started
+## Démarrer
 
-To run the development server:
-
-```bash
-    npm run dev
-    # or
-    yarn dev
-    # or
-    pnpm dev
-    # or
-    bun dev
-```
-
-This will start the Expo Dev Server. Open the app in:
-
-- **iOS**: press `i` to launch in the iOS simulator _(Mac only)_
-- **Android**: press `a` to launch in the Android emulator
-- **Web**: press `w` to run in a browser
-
-You can also scan the QR code using the [Expo Go](https://expo.dev/go) app on your device. This project fully supports running in Expo Go for quick testing on physical devices.
-
-## Adding components
-
-You can add more reusable components using the CLI:
+Prérequis : Node.js et [pnpm](https://pnpm.io/). Pour tester sur téléphone, l'app [Expo Go](https://expo.dev/go).
 
 ```bash
-npx react-native-reusables/cli@latest add [...components]
+pnpm install
 ```
 
-> e.g. `npx react-native-reusables/cli@latest add input textarea`
+```bash
+pnpm dev
+```
 
-If you don't specify any component names, you'll be prompted to select which components to add interactively. Use the `--all` flag to install all available components at once.
+Dans le serveur Expo, `a` ouvre l'émulateur Android, `i` le simulateur iOS (Mac uniquement), `w` le navigateur. On peut aussi scanner le QR code avec Expo Go.
 
-## Project Features
+### Scripts
 
-- ⚛️ Built with [Expo Router](https://expo.dev/router)
-- 🎨 Styled with [Tailwind CSS](https://tailwindcss.com/) via [Uniwind](https://uniwind.dev/)
-- 📦 UI powered by [React Native Reusables](https://github.com/founded-labs/react-native-reusables)
-- 🚀 New Architecture enabled
-- 🔥 Edge to Edge enabled
-- 📱 Runs on iOS, Android, and Web
+| Commande | Rôle |
+| --- | --- |
+| `pnpm dev` | Lance le serveur Expo (cache vidé) |
+| `pnpm android` / `pnpm ios` / `pnpm web` | Lance directement sur une plateforme |
+| `pnpm test` | Lance les tests Jest |
+| `pnpm exec tsc --noEmit` | Vérifie les types |
+| `pnpm clean` | Supprime `.expo` et `node_modules` |
 
-## Learn More
+> Sur un clone neuf, lance `pnpm dev` une fois avant `tsc` : c'est Expo qui génère `expo-env.d.ts`, le fichier qui déclare les imports `.css`. Sans lui, `tsc` signale `Cannot find module '@/global.css'`.
 
-To dive deeper into the technologies used:
+## Structure
 
-- [React Native Docs](https://reactnative.dev/docs/getting-started)
-- [Expo Docs](https://docs.expo.dev/)
-- [Uniwind Docs](https://docs.uniwind.dev/)
-- [React Native Reusables](https://reactnativereusables.com)
+```text
+app/                      Routes Expo Router
+  index.tsx               Accueil (liste des projets)
+  onboarding.tsx          Présentation, affichée au premier lancement
+  settings.tsx            Réglages
+  editor/[projectId].tsx  Éditeur d'un projet
+components/
+  lrx/                    Composants propres à LRX
+    editor/               Éditeur, forme d'onde, TAP TIME, mode karaoké, lecteur audio
+    screens/              Écrans accueil, onboarding, réglages
+    sheets/               Feuilles du bas : audio, paroles, métadonnées, export, ajustement, actions
+  ui/                     Composants React Native Reusables
+lib/
+  lrx-store.ts            Store Zustand persistant (projets, paroles, réglages)
+  lrx-editor-utils.ts     Découpage des paroles, formatage des temps, génération du .lrc
+  audio-files.ts          Choix, validation et copie des fichiers audio
+  theme.ts, brand.ts      Couleurs de navigation et de la marque
+  __tests__/              Tests Jest
+global.css                Tokens du thème (clair et sombre)
+```
 
-## Deploy with EAS
+## Choix techniques
 
-The easiest way to deploy your app is with [Expo Application Services (EAS)](https://expo.dev/eas).
+- **Persistance** : `expo-sqlite/kv-store`, inclus dans Expo Go. `react-native-mmkv` a été retiré car il demande un build natif. Les écritures sont groupées (au plus une toutes les 500 ms, et forcées quand l'app passe en arrière-plan).
+- **Audio** : `expo-audio`. L'éditeur ne suit que les changements d'état rares (chargé, lecture, durée, erreur) ; le timecode, la forme d'onde et l'aperçu lisent la position dans leurs propres composants, pour garder TAP TIME réactif.
+- **Forme d'onde** : enveloppe simulée, stable pour chaque projet. Extraire les vraies amplitudes demande un module natif absent d'Expo Go.
+- **Polices** : Geist et Geist Mono. React Native ne synthétise pas les graisses des polices personnalisées, donc `lib/fonts.ts` associe chaque classe (`font-medium`, `font-bold`, `font-mono`…) à la bonne famille.
+- **Thème** : les couleurs sont définies dans `global.css`. Un test vérifie que les copies en JavaScript (`lib/theme.ts`, `lib/brand.ts`) restent identiques.
 
-- [EAS Build](https://docs.expo.dev/build/introduction/)
-- [EAS Updates](https://docs.expo.dev/eas-update/introduction/)
-- [EAS Submit](https://docs.expo.dev/submit/introduction/)
+## Tests
 
----
+```bash
+pnpm test
+```
 
-If you enjoy using React Native Reusables, please consider giving it a ⭐ on [GitHub](https://github.com/founded-labs/react-native-reusables). Your support means a lot!
+Les tests couvrent les utilitaires de l'éditeur (découpage, formatage des temps, nom de fichier, export LRC), le store (création, statuts, timestamps, annulation, import, suppression, réglages, persistance groupée), la validation des fichiers audio et la cohérence du thème.
