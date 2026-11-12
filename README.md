@@ -56,6 +56,17 @@ Dans le serveur Expo, `a` ouvre l'émulateur Android, `i` le simulateur iOS (Mac
 
 > Sur un clone neuf, lance `pnpm dev` une fois avant `tsc` : c'est Expo qui génère `expo-env.d.ts`, le fichier qui déclare les imports `.css`. Sans lui, `tsc` signale `Cannot find module '@/global.css'`.
 
+## Télécharger l'APK Android
+
+Le workflow [`.github/workflows/android-apk.yml`](.github/workflows/android-apk.yml) construit un APK de release sur GitHub Actions, sans compte EAS.
+
+- **Lancer un build** : onglet *Actions* > *Build Android APK* > *Run workflow*, ou pousser un tag `v*` (par exemple `v1.0.0`).
+- **Récupérer l'APK** : dans *Releases*, chaque build publie le fichier `lrx-<version>-<build>.apk`, téléchargeable directement depuis le téléphone. Il est aussi joint au run dans *Actions* (artefact, gardé 30 jours).
+
+Pour réduire la taille, l'APK ne contient que l'architecture `arm64-v8a` (quasiment tous les téléphones Android récents), le code est réduit par R8, les ressources inutilisées sont retirées et les bibliothèques natives sont compressées.
+
+L'APK est signé avec la clé de debug du template Expo : il s'installe hors Play Store (autoriser les sources inconnues), et chaque nouveau build s'installe par-dessus le précédent.
+
 ## Structure
 
 ```text

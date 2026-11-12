@@ -1,0 +1,116 @@
+# Builds a release APK of LRX on the GitHub runner (no EAS account needed) and publishes it
+# as a downloadable file: a workflow artifact on every run, and a GitHub Release asset.
+#
+# Run it from the Actions tab (Build Android APK > Run workflow), or push a tag such as v1.0.0.
+
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # needed to create the GitHub Release
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      # Each build gets a higher versionCode so Android installs it over the previous one.
+      - name: Set version code
+        run: |
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.android.versionCode = Number(process.env.GITHUB_RUN_NUMBER);
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2));
+          "
+
+      - name: Generate the Android project
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+        env:
+          CI: 1
+
+      # Size reduction:
+      # - reactNativeArchitectures=arm64-v8a: only the native libraries for 64-bit ARM, which covers
+      #   nearly every Android phone from the last years (drops armeabi-v7a, x86 and x86_64).
+      # - enableMinifyInReleaseBuilds: R8 shrinks and obfuscates the Java/Kotlin code.
+      # - enableShrinkResourcesInReleaseBuilds: removes unused Android resources.
+      # - enablePngCrunchInReleaseBuilds: compresses PNG resources.
+      # - expo.useLegacyPackaging: stores the native libraries compressed in the APK (smaller download).
+      - name: Build release APK
+        working-directory: android
+        run: >
+          ./gradlew assembleRelease --no-daemon
+          -PreactNativeArchitectures=arm64-v8a
+          -Pandroid.enableMinifyInReleaseBuilds=true
+          -Pandroid.enableShrinkResourcesInReleaseBuilds=true
+          -Pandroid.enablePngCrunchInReleaseBuilds=true
+          -Pexpo.useLegacyPackaging=true
+
+      - name: Rename APK
+        id: apk
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          NAME="lrx-${VERSION}-${GITHUB_RUN_NUMBER}.apk"
+          mv android/app/build/outputs/apk/release/app-release.apk "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "### APK : \`$NAME\` ($(du -h "$NAME" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: ${{ steps.apk.outputs.name }}
+          compression-level: 0 # an APK is already a zip
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', github.run_number) }}
+          name: LRX ${{ steps.apk.outputs.version }} (build ${{ github.run_number }})
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          files: ${{ steps.apk.outputs.name }}
+          body: |
+            APK Android (arm64-v8a) construit depuis ${{ github.sha }}.
+            Télécharge le fichier `.apk` ci-dessous sur ton téléphone et ouvre-le pour l'installer.
