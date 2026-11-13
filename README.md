@@ -105,3 +105,8 @@ pnpm test
 ```
 
 Les tests couvrent les utilitaires de l'éditeur (découpage, formatage des temps, nom de fichier, export LRC), le store (création, statuts, timestamps, annulation, import, suppression, réglages, persistance groupée), la validation des fichiers audio et la cohérence du thème.
+
+## Autre projet du dépôt : Camion Express
+
+Le dossier [`truck-game/`](truck-game/README.md) contient **Camion Express**, un jeu Android de simulation de camion en 3D, indépendant de LRX. Son APK est construit par le workflow *Camion Express APK*.
+

@@ -1,0 +1,90 @@
+# Builds the Camion Express truck game (truck-game/) as an Android APK and publishes it:
+# a workflow artifact on every run, and a GitHub Release asset to download from the phone.
+#
+# Runs on each push that changes truck-game/, or from the Actions tab (Run workflow).
+
+name: Camion Express APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'truck-game/**'
+      - '.github/workflows/camion-express-apk.yml'
+
+permissions:
+  contents: write # needed to create the GitHub Release
+
+concurrency:
+  group: camion-express-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: truck-game
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: truck-game/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build the game into the Android assets
+        run: npm run build
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK
+        working-directory: truck-game/android
+        run: ./gradlew assembleRelease --no-daemon -PversionCode=${{ github.run_number }}
+
+      - name: Rename APK
+        id: apk
+        run: |
+          NAME="camion-express-1.0.${GITHUB_RUN_NUMBER}.apk"
+          mv android/app/build/outputs/apk/release/app-release.apk "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "### APK : \`$NAME\` ($(du -h "$NAME" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: truck-game/${{ steps.apk.outputs.name }}
+          compression-level: 0
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: camion-express-build-${{ github.run_number }}
+          name: Camion Express 1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: truck-game/${{ steps.apk.outputs.name }}
+          body: |
+            Jeu de simulation de camion pour Android, construit depuis ${{ github.sha }}.
+            Télécharge le fichier `.apk` ci-dessous sur ton téléphone et ouvre-le pour l'installer
+            (autorise l'installation d'applications de sources inconnues si Android le demande).

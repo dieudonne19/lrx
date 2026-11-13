@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The CI passes -PversionCode=<run number> so each build installs over the previous one.
+def buildNumber = (project.findProperty('versionCode') ?: '1').toString().toInteger()
+
+android {
+    namespace 'com.dieudonne19.camionexpress'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.dieudonne19.camionexpress'
+        minSdk 26
+        targetSdk 35
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+    }
+
+    signingConfigs {
+        // Key committed in the repository so every build can update the installed app.
+        // It is not secret: use your own key (and keep it private) to publish on a store.
+        game {
+            storeFile file('camion-express.keystore')
+            storePassword 'camionexpress'
+            keyAlias 'camion'
+            keyPassword 'camionexpress'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            signingConfig signingConfigs.game
+        }
+        debug {
+            signingConfig signingConfigs.game
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

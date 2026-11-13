@@ -1,0 +1,11 @@
+# Build outputs (npm run build)
+www/game.js
+www/game.js.map
+android/app/src/main/assets/
+
+# Android / Gradle
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.apk

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A truck seen from the side, inside the 66dp safe zone of the 108dp adaptive icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Road -->
+    <path android:fillColor="#3B3D40" android:pathData="M18,72h72v6h-72z" />
+    <path android:fillColor="#F5C542" android:pathData="M24,74h8v2h-8zM40,74h8v2h-8zM56,74h8v2h-8zM72,74h8v2h-8z" />
+    <!-- Trailer -->
+    <path android:fillColor="#F4F6F8" android:pathData="M22,40h42v26h-42z" />
+    <path android:fillColor="#2E4057" android:pathData="M22,58h42v3h-42z" />
+    <!-- Cab -->
+    <path android:fillColor="#D23C2F" android:pathData="M66,46h12l8,10v10h-20z" />
+    <path android:fillColor="#26394A" android:pathData="M69,49h8l5,7h-13z" />
+    <!-- Wheels -->
+    <path android:fillColor="#1D1F22" android:pathData="M30,68m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+    <path android:fillColor="#1D1F22" android:pathData="M42,68m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+    <path android:fillColor="#1D1F22" android:pathData="M78,68m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+    <path android:fillColor="#B9BEC4" android:pathData="M30,68m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <path android:fillColor="#B9BEC4" android:pathData="M42,68m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <path android:fillColor="#B9BEC4" android:pathData="M78,68m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+</vector>
